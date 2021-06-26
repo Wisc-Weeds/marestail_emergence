@@ -12,6 +12,7 @@ library(drc)
 library(reactable)
 library(ggthemes)
 library(ggtext)
+library(patchwork)
 ```
 
 
@@ -190,9 +191,10 @@ ed3 %>%
   geom_point(position = position_dodge(width = 0.7)) +
   geom_linerange(aes(ymin = lower, ymax = upper), 
                  position = position_dodge(width = 0.7)) +
-  labs(x = NULL, y = "Growing degree days",
-       title = "Horseweed emergence in <b style='color:#0000ff;'>wheat stubble</b> and <b style='color:#b02631;'>soybean</b> at North Platte, NE",
-       subtitle = "Horseweed accessions comulative emergence was recorded from Sep 2016 to May 2017") +
+  labs(x = NULL, y = "Growing degree days"#,
+#       title = "Horseweed emergence in <b style='color:#0000ff;'>wheat stubble</b> and <b style='color:#b02631;'>soybean</b> at North Platte, NE",
+#       subtitle = "Horseweed accessions comulative emergence was recorded from Sep 2016 to May 2017"
+) +
   scale_color_manual(values = c("#b02631", "#0000ff")) +
   facet_grid(~ ed, switch = "y") +
   coord_flip() +
@@ -201,7 +203,7 @@ ed3 %>%
   theme(legend.position = "none",
         plot.title.position = "plot",
         plot.title = element_markdown(),
-        plot.subtitle = element_markdown(size = 10)) 
+        plot.subtitle = element_markdown(size = 10)) -> fig3
 
 ggsave("figures/fig_3.png", dpi = 300)
 ```
@@ -263,7 +265,7 @@ ggplot(aes(x = GDD, y = emergence, color = trt)) +
                color = "blue") +
   annotate("text", x = 1450, y = 82, label = "90% \nemergence", fontface = 'italic') +
   theme_few() +
-  theme(legend.position = c(0.85, 0.22))
+  theme(legend.position = c(0.85, 0.22)) -> fig4
 
 ggsave("figures/fig4.png")
 ```
@@ -325,7 +327,7 @@ wd_sct %>%
                            "Air temperature (C)" = "mean_temp",
                            "Soil temperature (C)" = "soil_temp")) %>% 
   ggplot(aes(x = date, y = a + temp*b)) +
-  geom_point(aes(color = type), size = 1) +
+  geom_point(aes(color = type), size = 1, alpha = 0.5) +
   geom_line(aes(color = type, linetype = type), size = .3) +
   scale_color_manual(name = NULL, values = c("blue", "firebrick")) +
   scale_shape_manual(name = NULL, values = c(18, 16)) +
@@ -333,11 +335,28 @@ wd_sct %>%
   scale_y_continuous(
     "Precipitation (mm)", 
     sec.axis = sec_axis(~ (. - a)/b, name = "Temperature (C)")) +
-  scale_x_date() +
+  scale_x_date(date_minor_breaks = "1 day", date_labels = "%b %Y") +
   theme_bw() +
   theme(legend.position = "bottom") +
-  geom_bar(aes(x = date, y = precip, linetype = NULL, shape = NULL), stat = "identity")
+  geom_bar(aes(x = date, y = precip, 
+               width = 3,
+               linetype = NULL, 
+               shape = NULL), 
+           stat = "identity", 
+           fill = "grey10",
+           show.legend = FALSE) +
+  labs(x = NULL) -> temp
 
 ggsave("figures/temp.png")
+```
+
+```{r}
+temp + fig4 -> figg
+
+fig_np <- figg / fig3 +
+  plot_annotation(title = "Horseweed emergence in <b style='color:#0000ff;'>wheat stubble</b> and <b style='color:#b02631;'>soybean</b> at North Platte, NE",
+       subtitle = "Horseweed accessions comulative emergence was recorded from Sep 2016 to May 2017") 
+
+ggsave(x = fig_np, filename = "figures/north_platte.png")
 ```
 
