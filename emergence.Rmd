@@ -795,11 +795,11 @@ north_platte$GDD0[north_platte$GDD0==0] <- 0.5
 ```{r Control Plot, message=FALSE, warning=FALSE}
 north_platte %>% 
 ggplot(aes(x = GDD, y = emergence, color = trt)) + 
-  geom_line(data = nd, aes(x = GDD, y = p, color = trt), size = 1.2) +
-  labs(y="Cumulative emergence (%)", x = "Growing degree days") +
-#  coord_trans(x= "log") +
+  #  coord_trans(x= "log") +
   geom_jitter(data = north_platte, aes(x = GDD, y = emergence, color = trt),
               alpha = 0.1) +
+  geom_line(data = nd, aes(x = GDD, y = p, color = trt), size = 1.2) +
+  labs(y="Cumulative emergence (%)", x = "Growing degree days") +
   scale_color_brewer(name = NULL, palette = "Dark2") +
 #  scale_color_viridis_d(name = NULL, option = "C") +
   geom_segment(aes(x = 0.5, y = 10, 
