@@ -15,6 +15,7 @@ library(ggtext)
 library(patchwork)
 ```
 
+# Scottsbluff
 
 ```{r}
 readxl::read_excel("Emergence.xlsx", sheet = "SCOTTSBLUFF") %>% 
@@ -31,7 +32,7 @@ readxl::read_excel("Emergence.xlsx", sheet = "SCOTTSBLUFF") %>%
                                  "Npl1" = "North Platte",
                                  "Scb1" = "Scottsbluff")) %>% 
   mutate(location = "Scottsbluff") %>% 
-  filter(!is.na(GDD))
+  filter(!is.na(GDD)) -> sctbf1
 ```
 
 
@@ -49,8 +50,286 @@ readxl::read_excel("Emergence.xlsx", sheet = "SCOTTSBLUFF") %>%
                                  "Lin1" = "Lincoln",
                                  "Npl1" = "North Platte",
                                  "Scb1" = "Scottsbluff")) %>% 
-  mutate(location = "Scottsbluff")
+  mutate(location = "Scottsbluff") -> sctbf2
 ```
+
+
+```{r}
+sctbf1 %>% 
+  bind_rows(sctbf2) %>% 
+  mutate(type = str_to_lower(type)) %>% 
+  unite("trt", c("population", "type"), sep = " in ", remove = FALSE) %>% 
+  drop_na() -> scottsbluff
+```
+
+```{r message = FALSE, warning = FALSE}
+model2 <- drm(emergence ~ GDD, trt, 
+              fct = W1.3(fixed = c(NA, 100, NA), 
+                         names = c("slope", "upper", "ed50")),
+              data = scottsbluff)
+```
+
+```{r}
+plot(model2)
+```
+
+```{r}
+broom::tidy(model2) %>% 
+  mutate_if(is.double, ~ round(., 2)) %>% 
+  reactable()
+```
+
+```{r}
+ED(model2, c(10, 50, 90), type = "absolute", interval = "delta") %>% 
+  as.data.frame() %>% 
+  rownames_to_column(., var = "name") %>% 
+  as_tibble() %>% 
+  separate(name, c("param", "trt", "ED"), sep = ":") %>% 
+  janitor::clean_names() %>% 
+  separate("trt", c("population", "type"), sep = " in ", remove = FALSE) %>% 
+#  mutate(location = str_to_title(location)) %>% 
+  mutate_if(is_character, as_factor) -> ed2
+```
+
+```{r}
+EDcomp(model2, c(90,90), type = "absolute", 
+       interval = "delta", level = 0.95)
+```
+
+
+```{r}
+ed2 %>% 
+  mutate(ed = case_when(
+  ed == "10" ~ "10% emergence",
+  ed == "50" ~ "50% emergence",
+  ed == "90" ~ "90% emergence",
+  TRUE ~ "ed")) %>% 
+  ggplot(aes(x = population, y = estimate, color = trt)) +
+  geom_point(position = position_dodge(width = 0.7)) +
+  geom_linerange(aes(ymin = lower, ymax = upper), 
+                 position = position_dodge(width = 0.7)) +
+  labs(x = NULL, y = "Growing degree days"#,
+#       title = "Horseweed emergence in <b style='color:#0000ff;'>wheat stubble</b> and <b style='color:#b02631;'>soybean</b> at North Platte, NE",
+#       subtitle = "Horseweed accessions comulative emergence was recorded from Sep 2016 to May 2017"
+) +
+  scale_color_brewer(palette = "Set1") +
+#  scale_color_viridis_d(name = NULL, option = "G") +
+  facet_grid(~ ed, switch = "y") +
+  coord_flip() +
+  theme_few() +
+#  scale_y_continuous(limits = c(0, 1500)) +
+  theme(legend.position = "none",
+        axis.title = element_markdown(size = 10),
+        axis.text = element_markdown(size = 9),
+        strip.text = element_markdown(face = "italic"),
+        plot.title.position = "plot",
+        plot.title = element_markdown(),
+        plot.subtitle = element_markdown(size = 10)) -> fig1
+
+ggsave("figures/fig_1.png", dpi = 300)
+```
+
+
+```{r Control prediction, include=FALSE}
+newdata <- expand.grid(GDD=exp(seq(log(0.5), log(760), length=760)))
+newdata1 <- data.frame(trt =c("Lin1 in fallow"), newdata)
+newdata2 <- data.frame(trt =c("Lin1 in irrigated"), newdata)
+newdata3 <- data.frame(trt =c("Npl1 in fallow"), newdata)
+newdata4 <- data.frame(trt =c("Npl1 in irrigated"), newdata)
+newdata5 <- data.frame(trt =c("Scb1 in fallow"), newdata)
+newdata6 <- data.frame(trt =c("Scb1 in irrigated"), newdata)
+
+nd=rbind(newdata1, newdata2, newdata3, newdata4, newdata5, newdata6)
+
+pm <- predict(model2, newdata=nd, interval="confidence")
+
+nd$p <- pm[,1] 
+nd$pmin <- pm[,2] 
+nd$pmax <- pm[,3] 
+
+scottsbluff$GDD0 <- scottsbluff$GDD
+scottsbluff$GDD0[scottsbluff$GDD0==0] <- 0.5
+```
+
+
+```{r Control Plot, message=FALSE, warning=FALSE}
+scottsbluff %>% 
+ggplot(aes(x = GDD, y = emergence, color = trt)) + 
+  geom_line(data = nd, aes(x = GDD, y = p, color = trt), size = 1.2) +
+  labs(y="Cumulative emergence (%)", x = "Growing degree days") +
+#  coord_trans(x= "log") +
+  geom_jitter(data = scottsbluff, aes(x = GDD, y = emergence, color = trt),
+              alpha = 0.1) +
+  scale_color_brewer(name = NULL, palette = "Set1") +
+#  scale_color_viridis_d(name = NULL, option = "C") +
+  geom_segment(aes(x = 20, y = 10, 
+                   xend = 120, yend = 10), 
+               arrow = arrow(length = unit(0.03, "npc")), 
+               size = 1.05,
+               color = "blue") +
+  annotate("text", x = 280, y = 10, label = "10% emergence", 
+           fontface = 'italic',
+           size = 2.7) +
+  geom_segment(aes(x = 45, y = 50, 
+                   xend = 150, yend = 50), 
+               arrow = arrow(length = unit(0.03, "npc")),
+               size = 1.05,
+               color = "blue") +
+  annotate("text", x = 310, y = 50, label = "50% emergence", 
+           fontface = 'italic',
+           size = 2.7) +
+  geom_segment(aes(x = 100, y = 90, 
+                   xend = 250, yend = 90), 
+               arrow = arrow(length = unit(0.03, "npc")),
+               size = 1.05,
+               color = "blue") +
+  annotate("text", x = 410, y = 90, label = "90% emergence", 
+           fontface = 'italic',
+           size = 2.7) +
+  theme_few() +
+  theme(axis.title = element_markdown(size = 10),
+        axis.text = element_markdown(size = 9),
+        legend.position = c(0.8, 0.2),
+        legend.text = element_text(size = 5),
+        legend.key.size = unit(0.3, "cm")) -> fig2
+
+ggsave("figures/fig_2.png")
+```
+
+
+```{r}
+readxl::read_excel("Scottsbluff Marestail.xlsx", sheet = "Weather Yr1") %>% 
+  janitor::row_to_names(row_number = 2) %>% 
+  janitor::clean_names() %>% 
+  rename(
+    temp_high = c,
+    temp_low = c_2,
+    rel_hum = percent,
+    precip = mm,
+    wind_sp = m_s,
+    soil_temp = c_10cm
+  ) %>% 
+  dplyr::select(-mj_m_2, -mm_2, -time) %>% 
+  unite("date", c("year", "month", "day"), sep = "-") %>% 
+  mutate(date = lubridate::ymd(date)) %>% 
+  mutate_if(is_character, as.double) -> wd_sct1
+
+readxl::read_excel("Scottsbluff Marestail.xlsx", sheet = "Weather Yr2") %>% 
+  janitor::row_to_names(row_number = 2) %>% 
+  janitor::clean_names() %>% 
+  rename(
+    temp_high = c,
+    temp_low = c_2,
+    rel_hum = percent,
+    precip = mm,
+    wind_sp = m_s,
+    soil_temp = c_10cm
+  ) %>% 
+  dplyr::select(-mj_m_2, -mm_2, -time) %>% 
+  unite("date", c("year", "month", "day"), sep = "-") %>% 
+  mutate(date = lubridate::ymd(date)) %>% 
+  mutate_if(is_character, as.double) -> wd_sct2
+
+
+wd_sct1 %>% 
+  bind_rows(wd_sct2) %>% 
+  mutate(mean_temp = (temp_high + temp_low) / 2) %>% 
+  pivot_longer(cols = c("mean_temp", "soil_temp"), 
+               names_to = "type", values_to = "temp") -> wd_sct
+```
+
+```{r}
+ylim.prim <- c(0, 180)   # in this example, precipitation
+ylim.sec <- c(-27, 36)    # in this example, temperature
+
+b <- diff(ylim.prim)/diff(ylim.sec)
+a <- ylim.prim[1] - b*ylim.sec[1] # there was a bug here
+```
+
+
+```{r}
+wd_sct %>% 
+  mutate(type = fct_recode(type,
+                           "Air temperature (C)" = "mean_temp",
+                           "Soil temperature (C)" = "soil_temp")) %>% 
+  ggplot(aes(x = date, y = a + temp*b)) +
+  geom_rect(mapping=aes(xmin= as.Date("2016-08-30"), xmax= as.Date("2017-04-03"),
+                        ymin= 0, ymax= 160), 
+            fill = "#FFFDD0", alpha=0.05) + 
+  annotate("text", x=as.Date("2016-12-15"), y = 155, 
+           label = "Year 1",
+           size = 2, color = "black") + 
+  geom_rect(mapping=aes(xmin= as.Date("2017-09-25"), xmax= as.Date("2017-12-31"),
+                        ymin= 0, ymax= 160), 
+            fill = "#FFFDD0", alpha=0.05) + 
+  annotate("text", x=as.Date("2017-11-20"), y = 155, 
+           label = "Year 2", face = "bold",
+           size = 2, color = "black") + 
+  geom_point(aes(color = type), size = 1, alpha = 0.5) +
+  geom_line(aes(color = type, linetype = type), size = .3) +
+  scale_color_manual(name = NULL, values = c("blue", "firebrick")) +
+  scale_shape_manual(name = NULL, values = c(18, 16)) +
+  scale_linetype_manual(name = NULL, values = c(3, 1)) +
+  scale_y_continuous(
+    "Precipitation (mm)", 
+    sec.axis = sec_axis(~ (. - a)/b, name = "Temperature (C)")) +
+  scale_x_date(date_minor_breaks = "1 day", date_labels = "%b %Y") +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  geom_bar(aes(x = date, y = precip, 
+               width = 3,
+               linetype = NULL, 
+               shape = NULL), 
+           stat = "identity", 
+           fill = "grey10",
+           show.legend = FALSE) +
+  annotate("text", x=as.Date("2016-08-30"), y = 55, 
+           label = "Precipitation",
+           size = 2, color = "grey10") +
+  annotate("text", x=as.Date("2017-07-15"), y = 80, 
+           label = "Mean\n air temperature",
+           size = 2, color = "blue") +
+  annotate("text", x=as.Date("2018-01-15"), y = 140, 
+           label = "Mean\n soil temperature",
+           size = 2, color = "firebrick") +
+  labs(x = NULL) +
+  theme(legend.position = "none",
+        axis.title = element_markdown(size = 10),
+        axis.text = element_markdown(size = 9)) -> fig3
+
+ggsave("figures/fig_3.png")
+```
+
+
+```{r}
+library(extrafont)
+library(showtext)
+showtext_auto()
+font_add_google("Roboto", "roboto") 
+```
+
+
+```{r}
+fig3 + fig2 -> figg
+
+fig_st <- figg / fig1 +
+  plot_annotation(title = "<b style='color:darkgreen;'>Horseweed</b> emergence in irrigated and fallow at Scottsbluff, NE",
+       subtitle = "Comulative emergence was recorded from Sep 2016 to Apr 2017 (Year 1) and Sep 2017 to Dec 2017 (Year 2)",
+       theme = theme(plot.title = element_markdown(hjust = 0, 
+                                                   family = "roboto",
+                                                   size = 15),
+                     plot.subtitle = element_markdown(family = "roboto",
+                                                      size = 10),
+                     plot.title.position = "plot")) 
+
+ggsave("figures/scottsbluff.png", width = 7)
+```
+
+
+
+
+
+# Lincoln
 
 
 ```{r}
@@ -92,6 +371,9 @@ readxl::read_excel("Emergence.xlsx", sheet = "Lincoln") %>%
 
 
 
+
+
+# North Platte
 
 ```{r}
 readxl::read_excel("Emergence.xlsx", sheet = "North Platte") %>% 
@@ -187,7 +469,7 @@ ed3 %>%
   ed == "50" ~ "50% emergence",
   ed == "90" ~ "90% emergence",
   TRUE ~ "ed")) %>% 
-  ggplot(aes(x = population, y = estimate, color = type)) +
+  ggplot(aes(x = population, y = estimate, color = trt)) +
   geom_point(position = position_dodge(width = 0.7)) +
   geom_linerange(aes(ymin = lower, ymax = upper), 
                  position = position_dodge(width = 0.7)) +
@@ -195,12 +477,16 @@ ed3 %>%
 #       title = "Horseweed emergence in <b style='color:#0000ff;'>wheat stubble</b> and <b style='color:#b02631;'>soybean</b> at North Platte, NE",
 #       subtitle = "Horseweed accessions comulative emergence was recorded from Sep 2016 to May 2017"
 ) +
-  scale_color_manual(values = c("#b02631", "#0000ff")) +
+#  scale_color_manual(values = c("#b02631", "#0000ff")) +
+  scale_color_viridis_d(name = NULL, option = "C") +
   facet_grid(~ ed, switch = "y") +
   coord_flip() +
   theme_few() +
   scale_y_continuous(limits = c(0, 1500)) +
   theme(legend.position = "none",
+        axis.title = element_markdown(size = 10),
+        axis.text = element_markdown(size = 9),
+        strip.text = element_markdown(face = "italic"),
         plot.title.position = "plot",
         plot.title = element_markdown(),
         plot.subtitle = element_markdown(size = 10)) -> fig3
@@ -251,21 +537,31 @@ ggplot(aes(x = GDD, y = emergence, color = trt)) +
                arrow = arrow(length = unit(0.03, "npc")), 
                size = 1.05,
                color = "blue") +
-  annotate("text", x = 350, y = 10, label = "10% emergence", fontface = 'italic') +
+  annotate("text", x = 510, y = 10, label = "10% emergence", 
+           fontface = 'italic',
+           size = 2.7) +
   geom_segment(aes(x = 50, y = 50, 
                    xend = 400, yend = 50), 
                arrow = arrow(length = unit(0.03, "npc")),
                size = 1.05,
                color = "blue") +
-  annotate("text", x = 560, y = 50, label = "50% emergence", fontface = 'italic') +
+  annotate("text", x = 710, y = 50, label = "50% emergence", 
+           fontface = 'italic',
+           size = 2.7) +
   geom_segment(aes(x = 350, y = 90, 
-                   xend = 1450, yend = 90), 
+                   xend = 1350, yend = 90), 
                arrow = arrow(length = unit(0.03, "npc")),
                size = 1.05,
                color = "blue") +
-  annotate("text", x = 1450, y = 82, label = "90% \nemergence", fontface = 'italic') +
+  annotate("text", x = 1250, y = 80, label = "90% \nemergence", 
+           fontface = 'italic',
+           size = 2.7) +
   theme_few() +
-  theme(legend.position = c(0.85, 0.22)) -> fig4
+  theme(axis.title = element_markdown(size = 10),
+        axis.text = element_markdown(size = 9),
+        legend.position = c(0.75, 0.25),
+        legend.text = element_text(size = 5),
+        legend.key.size = unit(0.3, "cm")) -> fig4
 
 ggsave("figures/fig4.png")
 ```
@@ -345,18 +641,45 @@ wd_sct %>%
            stat = "identity", 
            fill = "grey10",
            show.legend = FALSE) +
-  labs(x = NULL) -> temp
+  annotate("text", x=as.Date("2016-08-30"), y = 60, 
+           label = "Precipitation",
+           size = 2, color = "grey10") +
+  annotate("text", x=as.Date("2017-07-15"), y = 80, 
+           label = "Mean\n air temperature",
+           size = 2, color = "blue") +
+  annotate("text", x=as.Date("2017-01-15"), y = 150, 
+           label = "Mean soil temperature",
+           size = 2, color = "firebrick") +
+  labs(x = NULL) +
+  theme(legend.position = "none",
+        axis.title = element_markdown(size = 10),
+        axis.text = element_markdown(size = 9)) -> temp
 
 ggsave("figures/temp.png")
 ```
+
+
+
+```{r}
+library(extrafont)
+library(showtext)
+showtext_auto()
+font_add_google("Roboto", "roboto") 
+```
+
 
 ```{r}
 temp + fig4 -> figg
 
 fig_np <- figg / fig3 +
-  plot_annotation(title = "Horseweed emergence in <b style='color:#0000ff;'>wheat stubble</b> and <b style='color:#b02631;'>soybean</b> at North Platte, NE",
-       subtitle = "Horseweed accessions comulative emergence was recorded from Sep 2016 to May 2017") 
+  plot_annotation(title = "<b style='color:darkgreen;'>Horseweed</b> emergence in wheat stubble and soybean at North Platte, NE",
+       subtitle = "Horseweed accessions comulative emergence was recorded from Sep 2016 to May 2017",
+       theme = theme(plot.title = element_markdown(hjust = 0, 
+                                                   family = "roboto",
+                                                   size = 15),
+                     plot.subtitle = element_markdown(family = "roboto",
+                                                      size = 10))) 
 
-ggsave(x = fig_np, filename = "figures/north_platte.png")
+ggsave("figures/north_platte.png", width = 7)
 ```
 
