@@ -104,10 +104,13 @@ ed2 %>%
   ed == "50" ~ "50% emergence",
   ed == "90" ~ "90% emergence",
   TRUE ~ "ed")) %>% 
-  ggplot(aes(x = population, y = estimate, color = trt)) +
-  geom_point(position = position_dodge(width = 0.7)) +
+  ggplot(aes(x = fct_reorder(trt, estimate), y = estimate, color = trt)) +
+  geom_point(
+#    position = position_dodge(width = 0.7)
+    ) +
   geom_linerange(aes(ymin = lower, ymax = upper), 
-                 position = position_dodge(width = 0.7)) +
+#                 position = position_dodge(width = 0.7)
+                 ) +
   labs(x = NULL, y = "Growing degree days"#,
 #       title = "Horseweed emergence in <b style='color:#0000ff;'>wheat stubble</b> and <b style='color:#b02631;'>soybean</b> at North Platte, NE",
 #       subtitle = "Horseweed accessions comulative emergence was recorded from Sep 2016 to May 2017"
@@ -249,6 +252,7 @@ a <- ylim.prim[1] - b*ylim.sec[1] # there was a bug here
 
 ```{r}
 wd_sct %>% 
+  filter(date < as.Date("2018-01-30")) %>% 
   mutate(type = fct_recode(type,
                            "Air temperature (C)" = "mean_temp",
                            "Soil temperature (C)" = "soil_temp")) %>% 
@@ -283,13 +287,13 @@ wd_sct %>%
            stat = "identity", 
            fill = "grey10",
            show.legend = FALSE) +
-  annotate("text", x=as.Date("2016-08-30"), y = 55, 
+  annotate("text", x=as.Date("2016-08-30"), y = 70, 
            label = "Precipitation",
            size = 2, color = "grey10") +
-  annotate("text", x=as.Date("2017-07-15"), y = 80, 
-           label = "Mean\n air temperature",
+  annotate("text", x=as.Date("2016-12-30"), y = 10, 
+           label = "Mean \nair temperature",
            size = 2, color = "blue") +
-  annotate("text", x=as.Date("2018-01-15"), y = 140, 
+  annotate("text", x=as.Date("2017-01-15"), y = 140, 
            label = "Mean\n soil temperature",
            size = 2, color = "firebrick") +
   labs(x = NULL) +
@@ -422,14 +426,14 @@ ed1 %>%
   TRUE ~ "ed")) %>% 
   mutate(population = fct_relevel(population, 
                                   levels = c("Lin1", "Npl1", "Scb1","Natural"))) %>% 
-  ggplot(aes(x = population, y = estimate, color = trt)) +
-  geom_point(position = position_dodge(width = 0.7)) +
+  ggplot(aes(x = fct_reorder(trt, estimate), y = estimate, color = trt)) +
+  geom_point(
+#    position = position_dodge(width = 0.7)
+    ) +
   geom_linerange(aes(ymin = lower, ymax = upper), 
-                 position = position_dodge(width = 0.7)) +
-  labs(x = NULL, y = "Growing degree days"#,
-#       title = "Horseweed emergence in <b style='color:#0000ff;'>wheat stubble</b> and <b style='color:#b02631;'>soybean</b> at North Platte, NE",
-#       subtitle = "Horseweed accessions comulative emergence was recorded from Sep 2016 to May 2017"
-) +
+#                 position = position_dodge(width = 0.7)
+                 ) +
+  labs(x = NULL, y = "Growing degree days") +
   scale_color_brewer(palette = "Paired") +
 #  scale_color_viridis_d(name = NULL, option = "C") +
   facet_grid(~ ed, switch = "y") +
@@ -442,7 +446,7 @@ ed1 %>%
         strip.text = element_markdown(face = "italic"),
         plot.title.position = "plot",
         plot.title = element_markdown(),
-        plot.subtitle = element_markdown(size = 10)) -> fig1
+        plot.subtitle = element_markdown(size = 10)) -> fig4
 
 ggsave("figures/fig_4.png", dpi = 300)
 ```
@@ -516,7 +520,7 @@ ggplot(aes(x = GDD, y = emergence, color = trt)) +
         axis.text = element_markdown(size = 9),
         legend.position = c(0.8, 0.25),
         legend.text = element_text(size = 5),
-        legend.key.size = unit(0.3, "cm")) -> fig2
+        legend.key.size = unit(0.3, "cm")) -> fig5
 
 ggsave("figures/fig_5.png")
 ```
@@ -562,6 +566,7 @@ wd_lcn1 %>%
   pivot_longer(cols = c("mean_temp", "soil_temp"), 
                names_to = "type", values_to = "temp") -> wd_lcn
 ```
+
 
 ```{r}
 ylim.prim <- c(0, 180)   # in this example, precipitation
@@ -622,7 +627,7 @@ wd_lcn %>%
   labs(x = NULL) +
   theme(legend.position = "none",
         axis.title = element_markdown(size = 10),
-        axis.text = element_markdown(size = 9)) -> fig3
+        axis.text = element_markdown(size = 9)) -> fig6
 
 ggsave("figures/fig_6.png")
 ```
@@ -631,9 +636,9 @@ ggsave("figures/fig_6.png")
 
 
 ```{r}
-fig3 + fig2 -> figg
+fig6 + fig5 -> figg
 
-fig_st <- figg / fig1 +
+fig_st <- figg / fig4 +
   plot_annotation(title = "<b style='color:darkgreen;'>Horseweed</b> emergence in corn and soybean at Lincoln, NE",
        subtitle = "Comulative emergence was recorded from Sep 2016 to Apr 2017 (Year 1) and Sep 2017 to Jun 2018 (Year 2)",
        theme = theme(plot.title = element_markdown(hjust = 0, 

@@ -1,0 +1,540 @@
+---
+title: "Horseweed emergence in Nebraska"
+author: "Maxwel Coura Oliveira"
+date: "6/29/2021"
+output:       
+  html_document:  
+    css: "my_css.css" 
+    toc: TRUE
+    
+header-includes:
+  - \setcounter{section}{4}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.height = 7,
+  fig.width = 7,
+  fig.align = 'center')
+```
+
+
+```{r}
+options(scipen = 999)
+library(tidyverse)
+library(drc)
+library(reactable)
+library(reactablefmtr)
+```
+
+I have used the same model for all locations. You will see some comments in each subsection.
+
+## Scottsbluff
+
+```{r}
+readxl::read_excel("Emergence.xlsx", sheet = "SCOTTSBLUFF") %>% 
+  janitor::row_to_names(row_number = 1) %>% 
+  dplyr::select(1:4) %>% 
+  pivot_longer(cols = 2:4, names_to = "type", values_to = "emergence") %>% 
+  mutate(date = "Sep 2016 - Apr 2017") %>% 
+  mutate_at(c("GDD", "emergence"),  as.double) %>% 
+  mutate_at(c("GDD", "emergence"), ~ round(., 2)) %>% 
+  separate("type", c("population", "type"), sep = "-") %>% 
+  mutate_at(c("population", "type"), str_squish) %>% 
+  mutate(population = fct_recode(population,
+                                 "Lin1" = "Lincoln",
+                                 "Npl1" = "North Platte",
+                                 "Scb1" = "Scottsbluff")) %>% 
+  mutate(location = "Scottsbluff") %>% 
+  filter(!is.na(GDD)) -> sctbf1
+```
+
+```{r}
+readxl::read_excel("Emergence.xlsx", sheet = "SCOTTSBLUFF") %>% 
+  janitor::row_to_names(row_number = 1) %>% 
+  dplyr::select(7:13) %>% 
+  pivot_longer(cols = 2:7, names_to = "type", values_to = "emergence") %>% 
+  mutate(date = "Sep 2017 - Dec 2017") %>% 
+  mutate_at(c("GDD", "emergence"),  as.double) %>% 
+  mutate_at(c("GDD", "emergence"), ~ round(., 2)) %>% 
+  separate("type", c("population", "type"), sep = "-") %>% 
+  mutate_at(c("population", "type"), str_squish) %>% 
+  mutate(population = fct_recode(population,
+                                 "Lin1" = "Lincoln",
+                                 "Npl1" = "North Platte",
+                                 "Scb1" = "Scottsbluff")) %>% 
+  mutate(location = "Scottsbluff") -> sctbf2
+```
+
+
+```{r}
+sctbf1 %>% 
+  bind_rows(sctbf2) %>% 
+  mutate(type = str_to_lower(type)) %>% 
+  unite("trt", c("population", "type"), sep = " in ", remove = FALSE) %>% 
+  drop_na() -> scottsbluff
+```
+
+### Model
+
+I am using a Weibull function with three parameters. Notice that the upper limit is locked at 100.
+
+
+```{r echo = TRUE}
+model1 <- drm(emergence ~ GDD, trt, 
+              fct = W1.3(fixed = c(NA, 100, NA), 
+                         names = c("slope", "upper", "ed50")),
+              data = scottsbluff)
+```
+
+### Figure
+
+Do not worried about the figure right now because I am uging `ggplot` to make a better viz.
+
+```{r echo = TRUE}
+plot(model1, legendPos = c(40, 95), col = c(1,2,3,4,5,6),
+     ylab = "Emergence (%)")
+```
+
+### Model parameters
+
+```{r include=FALSE}
+broom::tidy(model1) %>% 
+  mutate_if(is.double, ~ round(., 4)) -> param_sct
+```
+
+```r
+summary(model1)
+```
+
+```{r}
+param_sct %>% 
+  reactable(theme = fivethirtyeight())
+```
+
+
+### EDs
+
+ED comes from effective dose; however we are using the model for weed emergence. In this case, each 10, 50, and 90 represent the % of emergence for each treatment.
+
+```{r include=FALSE}
+ED(model1, c(10, 50, 90), interval = "delta") %>% 
+  as.data.frame() %>% 
+  rownames_to_column(., var = "Term") %>% 
+  mutate_if(is.double, ~ round(., 4)) -> ed_sct
+```
+
+```r
+ED(model2, c(10, 50, 90), interval = "delta")
+```
+
+```{r}
+ed_sct %>% 
+  reactable(theme = fivethirtyeight()) 
+```
+
+
+
+### Emergence comparisons
+
+A t-test is made for each treatment at 90%, 50%, and 10%. You can compare 10 with 90% also. Also, you can compare any number between 1 and 100. I am using 10, 50, and 90% because it is the most common and you can tell a nice story.
+
+You can use **p-values** to conclude if a treatment is different to another. 
+
+#### Comparison of 90% emergence
+
+```{r echo=TRUE, include=FALSE}
+EDcomp(model1, c(90,90), type = "absolute") %>% 
+  as.data.frame() %>% 
+  rownames_to_column(., var = "Comparison") %>% 
+  mutate_if(is.double, ~ round(., 4)) -> edcompsct90
+```
+
+```r
+EDcomp(model1, c(90,90), type = "absolute")
+```
+
+```{r}
+edcompsct90 %>% 
+  reactable(theme = fivethirtyeight())
+```
+
+#### Comparison of 50% emergence
+
+```{r echo=TRUE, include=FALSE}
+EDcomp(model1, c(50,50), type = "absolute") %>% 
+  as.data.frame() %>% 
+  rownames_to_column(., var = "Comparison") %>% 
+  mutate_if(is.double, ~ round(., 4)) -> edcompsct50
+```
+
+```r
+EDcomp(model1, c(50,50), type = "absolute")
+```
+
+```{r}
+edcompsct50 %>% 
+  reactable(theme = fivethirtyeight())
+```
+
+
+
+#### Comparison of 10% emergence
+
+```{r echo=TRUE, include=FALSE}
+EDcomp(model1, c(10,10), type = "absolute") %>% 
+  as.data.frame() %>% 
+  rownames_to_column(., var = "Comparison") %>% 
+  mutate_if(is.double, ~ round(., 4)) -> edcompsct10
+```
+
+```r
+EDcomp(model1, c(10,10), type = "absolute")
+```
+
+```{r}
+edcompsct10 %>% 
+  reactable(theme = fivethirtyeight())
+```
+
+
+
+## Lincoln
+
+
+```{r}
+readxl::read_excel("Emergence.xlsx", sheet = "Lincoln") %>% 
+  janitor::row_to_names(row_number = 1) %>% 
+  dplyr::select(1:9) %>% 
+  pivot_longer(cols = 2:9, names_to = "type", values_to = "emergence") %>% 
+  mutate(date = "Sep 2016 - Apr 2017") %>% 
+  mutate_at(c("GDD", "emergence"),  as.double) %>% 
+  mutate_at(c("GDD", "emergence"), ~ round(., 2)) %>% 
+  separate("type", c("population", "type"), sep = "-") %>% 
+  mutate_at(c("population", "type"), str_squish) %>% 
+  mutate(population = fct_recode(population,
+                                 "Lin1" = "Lincoln",
+                                 "Npl1" = "North Platte",
+                                 "Scb1" = "Scottsbluff")) %>% 
+  mutate(location = "Lincoln") %>% 
+  filter(!is.na(GDD)) -> lcn1
+```
+
+
+```{r}
+readxl::read_excel("Emergence.xlsx", sheet = "Lincoln") %>% 
+  janitor::row_to_names(row_number = 1) %>% 
+  dplyr::select(13:21) %>% 
+  pivot_longer(cols = 2:9, names_to = "type", values_to = "emergence") %>% 
+  mutate(date = "Sep 2017-Jun 2018") %>% 
+  mutate_at(c("GDD", "emergence"),  as.double) %>% 
+  mutate_at(c("GDD", "emergence"), ~ round(., 2)) %>% 
+  separate("type", c("population", "type"), sep = "-") %>% 
+  mutate_at(c("population", "type"), str_squish) %>% 
+  mutate(population = fct_recode(population,
+                                 "Lin1" = "Lincoln",
+                                 "Npl1" = "North Platte",
+                                 "Scb1" = "Scottsbluff")) %>% 
+  mutate(location = "Lincoln") %>% 
+  filter(!is.na(GDD)) -> lcn2
+```
+
+
+```{r}
+lcn1 %>% 
+  bind_rows(lcn2) %>% 
+  mutate(type = str_to_lower(type)) %>% 
+  unite("trt", c("population", "type"), sep = " in ", remove = FALSE) %>% 
+  drop_na() -> lincoln
+```
+
+### Model
+
+I am using a Weibull function with three parameters. Notice that the upper limit is locked at 100.
+
+I have used the same model for all locations. 
+
+```{r echo = TRUE}
+model2 <- drm(emergence ~ GDD, trt, 
+              fct = W1.3(fixed = c(NA, 100, NA), 
+                         names = c("slope", "upper", "ed50")),
+              data = lincoln)
+```
+
+### Figure
+
+```{r}
+plot(model2, legendPos = c(70, 95), col = c(1,2,3,4,5,6),
+     ylab = "Emergence (%)")
+```
+
+### Model parameters
+
+```{r include=FALSE}
+broom::tidy(model2) %>% 
+  mutate_if(is.double, ~ round(., 4)) -> param_lin
+```
+
+```r
+summary(model2)
+```
+
+```{r}
+param_lin %>% 
+  reactable(theme = fivethirtyeight())
+```
+
+
+### EDs
+
+```{r include=FALSE}
+ED(model2, c(10, 50, 90), interval = "delta") %>% 
+  as.data.frame() %>% 
+  rownames_to_column(., var = "Term") %>% 
+  mutate_if(is.double, ~ round(., 4)) -> ed_lin
+```
+
+
+```r
+ED(model2, c(10, 50, 90), interval = "delta")
+```
+
+
+```{r}
+ed_lin %>% 
+  reactable(theme = fivethirtyeight())
+```
+
+
+### Emergence comparisons
+
+A t-test is made for each treatment at 90%, 50%, and 10%. You can compare 10 with 90% also. Also, you can compare any number between 1 and 100. I am using 10, 50, and 90% because it is the most common and you can tell a nice story.
+
+#### Comparison of 90% emergence
+
+```{r echo=TRUE, include=FALSE}
+EDcomp(model2, c(90,90), type = "absolute") %>% 
+  as.data.frame() %>% 
+  rownames_to_column(., var = "Comparison") %>% 
+  mutate_if(is.double, ~ round(., 4)) -> edcomplin90
+```
+
+```r
+EDcomp(model2, c(90,90), type = "absolute")
+```
+
+```{r}
+edcomplin90 %>% 
+  reactable(theme = fivethirtyeight())
+```
+
+#### Comparison of 50% emergence
+
+```{r echo=TRUE, include=FALSE}
+EDcomp(model2, c(50,50), type = "absolute") %>% 
+  as.data.frame() %>% 
+  rownames_to_column(., var = "Comparison") %>% 
+  mutate_if(is.double, ~ round(., 4)) -> edcomplin50
+```
+
+```r
+EDcomp(model2, c(50,50), type = "absolute")
+```
+
+```{r}
+edcomplin50 %>% 
+  reactable(theme = fivethirtyeight())
+```
+
+
+
+#### Comparison of 10% emergence
+
+```{r echo=TRUE, include=FALSE}
+EDcomp(model2, c(10,10), type = "absolute") %>% 
+  as.data.frame() %>% 
+  rownames_to_column(., var = "Comparison") %>% 
+  mutate_if(is.double, ~ round(., 4)) -> edcomplin10
+```
+
+```r
+EDcomp(model2, c(10,10), type = "absolute")
+```
+
+```{r}
+edcomplin10 %>% 
+  reactable(theme = fivethirtyeight())
+```
+
+
+
+## North Platte
+
+```{r}
+readxl::read_excel("Emergence.xlsx", sheet = "North Platte") %>% 
+  janitor::row_to_names(row_number = 1) %>% 
+  dplyr::select(1:4) %>% 
+  pivot_longer(cols = 2:4, names_to = "type", values_to = "emergence") %>% 
+  mutate(date = "Sep 2016 - May 2017") %>% 
+  mutate_at(c("GDD", "emergence"),  as.double) %>% 
+  mutate_at(c("GDD", "emergence"), ~ round(., 2)) %>% 
+  separate("type", c("population", "type"), sep = "-") %>% 
+  mutate_at(c("population", "type"), str_squish) %>% 
+  mutate(population = fct_recode(population,
+                                 "Lin1" = "Lincoln",
+                                 "Npl1" = "North Platte",
+                                 "Scb1" = "Scottsbluff")) %>% 
+  mutate(location = "North Platte") %>% 
+  filter(!is.na(GDD)) -> np1
+```
+
+
+```{r}
+readxl::read_excel("Emergence.xlsx", sheet = "North Platte") %>% 
+  janitor::row_to_names(row_number = 1) %>% 
+  dplyr::select(5:8) %>% 
+  pivot_longer(cols = 2:4, names_to = "type", values_to = "emergence") %>% 
+  mutate(date = "Sep 2016 - May 2017") %>% 
+  mutate_at(c("GDD", "emergence"),  as.double) %>% 
+  mutate_at(c("GDD", "emergence"), ~ round(., 2)) %>% 
+  separate("type", c("population", "type"), sep = "-") %>% 
+  mutate_at(c("population", "type"), str_squish) %>% 
+  mutate(population = fct_recode(population,
+                                 "Lin1" = "Lincoln",
+                                 "Npl1" = "North Platte",
+                                 "Scb1" = "Scottsbluff")) %>% 
+  mutate(location = "North Platte") %>% 
+  filter(!is.na(GDD)) -> np2
+```
+
+
+
+```{r}
+np1 %>% 
+  bind_rows(np2) %>% 
+  mutate(type = str_to_lower(type)) %>% 
+  unite("trt", c("population", "type"), sep = " in ", remove = FALSE) %>% 
+  drop_na() -> north_platte
+```
+
+
+### Model
+
+```{r echo = TRUE}
+model3 <- drm(emergence ~ GDD, trt, 
+              fct = W1.3(fixed = c(NA, 100, NA), 
+                         names = c("slope", "upper", "ed50")),
+              data = north_platte)
+```
+
+### Figure 
+
+
+```{r}
+plot(model3, legendPos = c(70, 95), col = c(1,2,3,4,5,6),
+     ylab = "Emergence (%)")
+```
+
+
+
+
+
+### Model parameters
+
+```{r include=FALSE}
+broom::tidy(model3) %>% 
+  mutate_if(is.double, ~ round(., 4)) -> param_np
+```
+
+```r
+summary(model2)
+```
+
+```{r}
+param_np %>% 
+  reactable(theme = fivethirtyeight())
+```
+
+
+
+### EDs
+
+```{r include=FALSE}
+ED(model3, c(10, 50, 90), interval = "delta") %>% 
+  as.data.frame() %>% 
+  rownames_to_column(., var = "Term") %>% 
+  mutate_if(is.double, ~ round(., 4)) -> ed_np
+```
+
+```r
+ED(model3, c(10, 50, 90), interval = "delta")
+```
+
+```{r}
+ed_np %>% 
+  reactable(theme = fivethirtyeight())
+```
+
+
+### Emergence comparisons
+
+A t-test is made for each treatment at 90%, 50%, and 10%. You can compare 10 with 90% also. Also, you can compare any number between 1 and 100. I am using 10, 50, and 90% because it is the most common and you can tell a nice story.
+
+#### Comparison of 90% emergence
+
+```{r echo=TRUE, include=FALSE}
+EDcomp(model3, c(90,90), type = "absolute") %>% 
+  as.data.frame() %>% 
+  rownames_to_column(., var = "Comparison") %>% 
+  mutate_if(is.double, ~ round(., 4)) -> edcompnp90
+```
+
+```r
+EDcomp(model3, c(90,90), type = "absolute")
+```
+
+```{r}
+edcompnp90 %>% 
+  reactable(theme = fivethirtyeight())
+```
+
+#### Comparison of 50% emergence
+
+```{r echo=TRUE, include=FALSE}
+EDcomp(model3, c(50,50), type = "absolute") %>% 
+  as.data.frame() %>% 
+  rownames_to_column(., var = "Comparison") %>% 
+  mutate_if(is.double, ~ round(., 4)) -> edcompnp50
+```
+
+```r
+EDcomp(model3, c(50,50), type = "absolute")
+```
+
+```{r}
+edcompnp50 %>% 
+  reactable(theme = fivethirtyeight())
+```
+
+
+
+#### Comparison of 10% emergence
+
+```{r echo=TRUE, include=FALSE}
+EDcomp(model3, c(10,10), type = "absolute") %>% 
+  as.data.frame() %>% 
+  rownames_to_column(., var = "Comparison") %>% 
+  mutate_if(is.double, ~ round(., 4)) -> edcompnp10
+```
+
+```r
+EDcomp(model3, c(10,10), type = "absolute")
+```
+
+```{r}
+edcompnp10 %>% 
+  reactable(theme = fivethirtyeight())
+```

@@ -1,0 +1,22 @@
+
+@import url(https://fonts.googleapis.com/css?family=Roboto:400,400i,700,700i&display=swap);
+
+h1 {
+  color: #E41C38;
+  font-size: 2em; 
+  font-family: "Roboto";
+  border-bottom: 1px solid #000000;
+}
+
+
+.red-color {
+  color: #E41C38;
+}
+
+
+body {
+  font-family: "Roboto";
+  background-color: #FDF2D9;
+  padding: 1em 2em 1em 1em;
+
+}
