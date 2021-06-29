@@ -63,24 +63,24 @@ sctbf1 %>%
 ```
 
 ```{r message = FALSE, warning = FALSE}
-model2 <- drm(emergence ~ GDD, trt, 
+model1 <- drm(emergence ~ GDD, trt, 
               fct = W1.3(fixed = c(NA, 100, NA), 
                          names = c("slope", "upper", "ed50")),
               data = scottsbluff)
 ```
 
 ```{r}
-plot(model2)
+plot(model1)
 ```
 
 ```{r}
-broom::tidy(model2) %>% 
+broom::tidy(model1) %>% 
   mutate_if(is.double, ~ round(., 2)) %>% 
   reactable()
 ```
 
 ```{r}
-ED(model2, c(10, 50, 90), type = "absolute", interval = "delta") %>% 
+ED(model1, c(10, 50, 90), type = "absolute", interval = "delta") %>% 
   as.data.frame() %>% 
   rownames_to_column(., var = "name") %>% 
   as_tibble() %>% 
@@ -92,7 +92,7 @@ ED(model2, c(10, 50, 90), type = "absolute", interval = "delta") %>%
 ```
 
 ```{r}
-EDcomp(model2, c(90,90), type = "absolute", 
+EDcomp(model1, c(90,90), type = "absolute", 
        interval = "delta", level = 0.95)
 ```
 
@@ -144,7 +144,7 @@ newdata6 <- data.frame(trt =c("Scb1 in irrigated"), newdata)
 
 nd=rbind(newdata1, newdata2, newdata3, newdata4, newdata5, newdata6)
 
-pm <- predict(model2, newdata=nd, interval="confidence")
+pm <- predict(model1, newdata=nd, interval="confidence")
 
 nd$p <- pm[,1] 
 nd$pmin <- pm[,2] 
@@ -192,7 +192,7 @@ ggplot(aes(x = GDD, y = emergence, color = trt)) +
   theme_few() +
   theme(axis.title = element_markdown(size = 10),
         axis.text = element_markdown(size = 9),
-        legend.position = c(0.8, 0.2),
+        legend.position = c(0.8, 0.25),
         legend.text = element_text(size = 5),
         legend.key.size = unit(0.3, "cm")) -> fig2
 
@@ -316,7 +316,7 @@ font_add_google("Roboto", "roboto")
 ```{r}
 fig3 + fig2 -> figg
 
-fig_st <- figg / fig1 +
+wrap_elements(full = figg) / fig1 +
   plot_annotation(title = "<b style='color:darkgreen;'>Horseweed</b> emergence in irrigated and fallow at Scottsbluff, NE",
        subtitle = "Comulative emergence was recorded from Sep 2016 to Apr 2017 (Year 1) and Sep 2017 to Dec 2017 (Year 2)",
        theme = theme(plot.title = element_markdown(hjust = 0, 
@@ -326,7 +326,7 @@ fig_st <- figg / fig1 +
                                                       size = 10),
                      plot.title.position = "plot")) 
 
-ggsave("figures/scottsbluff.png", width = 7)
+ggsave("figures/scottsbluff.png", width = 7, height = 7)
 ```
 
 
@@ -457,22 +457,22 @@ ed1
 
 ```{r control-prediction, include=FALSE}
 newdata <- expand.grid(GDD=exp(seq(log(0.5), log(1700), length=1700)))
-newdata1 <- data.frame(trt =c("Lin1 in corn"), newdata)
-newdata2 <- data.frame(trt =c("Lin1 in soybean"), newdata)
-newdata3 <- data.frame(trt =c("Npl1 in corn"), newdata)
-newdata4 <- data.frame(trt =c("Npl1 in soybean"), newdata)
-newdata5 <- data.frame(trt =c("Scb1 in corn"), newdata)
-newdata6 <- data.frame(trt =c("Scb1 in soybean"), newdata)
-newdata7 <- data.frame(trt =c("Natural in corn"), newdata)
-newdata8 <- data.frame(trt =c("Natural in soybean"), newdata)
+newdata7 <- data.frame(trt =c("Lin1 in corn"), newdata)
+newdata8 <- data.frame(trt =c("Lin1 in soybean"), newdata)
+newdata9 <- data.frame(trt =c("Npl1 in corn"), newdata)
+newdata10 <- data.frame(trt =c("Npl1 in soybean"), newdata)
+newdata11 <- data.frame(trt =c("Scb1 in corn"), newdata)
+newdata12 <- data.frame(trt =c("Scb1 in soybean"), newdata)
+newdata13 <- data.frame(trt =c("Natural in corn"), newdata)
+newdata14 <- data.frame(trt =c("Natural in soybean"), newdata)
 
-nd = rbind(newdata1, newdata2, newdata3, newdata4, newdata5, newdata6, newdata7, newdata8)
+nd2 = rbind(newdata7, newdata8, newdata9, newdata10, newdata11, newdata12, newdata13, newdata14)
 
-pm <- predict(model1, newdata=nd, interval="confidence")
+pm <- predict(model1, newdata=nd2, interval="confidence")
 
-nd$p <- pm[,1] 
-nd$pmin <- pm[,2] 
-nd$pmax <- pm[,3] 
+nd2$p <- pm[,1] 
+nd2$pmin <- pm[,2] 
+nd2$pmax <- pm[,3] 
 
 lincoln$GDD0 <- lincoln$GDD
 lincoln$GDD0[lincoln$GDD0==0] <- 0.5
@@ -487,7 +487,7 @@ ggplot(aes(x = GDD, y = emergence, color = trt)) +
 #  coord_trans(x= "log") +
   geom_jitter(data = lincoln, aes(x = GDD, y = emergence, color = trt),
               alpha = 0.1) +
-  geom_line(data = nd, aes(x = GDD, y = p, color = trt), size = 1.2) +
+  geom_line(data = nd2, aes(x = GDD, y = p, color = trt), size = 1.2) +
   labs(y="Cumulative emergence (%)", x = "Growing degree days") +
   scale_color_brewer(name = NULL, palette = "Paired") +
 #  scale_color_viridis_d(name = NULL, option = "C") +
@@ -518,7 +518,7 @@ ggplot(aes(x = GDD, y = emergence, color = trt)) +
   theme_few() +
   theme(axis.title = element_markdown(size = 10),
         axis.text = element_markdown(size = 9),
-        legend.position = c(0.8, 0.25),
+        legend.position = c(0.8, 0.3),
         legend.text = element_text(size = 5),
         legend.key.size = unit(0.3, "cm")) -> fig5
 
@@ -638,7 +638,7 @@ ggsave("figures/fig_6.png")
 ```{r}
 fig6 + fig5 -> figg
 
-fig_st <- figg / fig4 +
+wrap_elements(full = figg) / fig4 +
   plot_annotation(title = "<b style='color:darkgreen;'>Horseweed</b> emergence in corn and soybean at Lincoln, NE",
        subtitle = "Comulative emergence was recorded from Sep 2016 to Apr 2017 (Year 1) and Sep 2017 to Jun 2018 (Year 2)",
        theme = theme(plot.title = element_markdown(hjust = 0, 
@@ -648,7 +648,7 @@ fig_st <- figg / fig4 +
                                                       size = 10),
                      plot.title.position = "plot")) 
 
-ggsave("figures/lincoln.png", width = 7)
+ggsave("figures/lincoln.png", width = 7, height = 7)
 ```
 
 
@@ -750,17 +750,20 @@ ed3 %>%
   ed == "50" ~ "50% emergence",
   ed == "90" ~ "90% emergence",
   TRUE ~ "ed")) %>% 
-  ggplot(aes(x = population, y = estimate, color = trt)) +
-  geom_point(position = position_dodge(width = 0.7)) +
+  ggplot(aes(x = fct_reorder(trt, estimate), y = estimate, color = trt)) +
+  geom_point(
+#    position = position_dodge(width = 0.7)
+    ) +
   geom_linerange(aes(ymin = lower, ymax = upper), 
-                 position = position_dodge(width = 0.7)) +
+#                 position = position_dodge(width = 0.7)
+                 ) +
   labs(x = NULL, y = "Growing degree days") +
   scale_color_brewer(palette = "Dark2") +
 #  scale_color_viridis_d(name = NULL, option = "C") +
   facet_grid(~ ed, switch = "y") +
   coord_flip() +
   theme_few() +
-#  scale_y_continuous(limits = c(0, 1500)) +
+  scale_y_continuous(limits = c(0, 1600)) +
   theme(legend.position = "none",
         axis.title = element_markdown(size = 10),
         axis.text = element_markdown(size = 9),
@@ -777,20 +780,20 @@ ggsave("figures/fig_7.png", dpi = 300)
 
 ```{r Control prediction, include=FALSE}
 newdata <- expand.grid(GDD=exp(seq(log(0.5), log(1500), length=1500)))
-newdata1 <- data.frame(trt =c("Lin1 in soybean"), newdata)
-newdata2 <- data.frame(trt =c("Lin1 in wheat stubble"), newdata)
-newdata3 <- data.frame(trt =c("Npl1 in soybean"), newdata)
-newdata4 <- data.frame(trt =c("Npl1 in wheat stubble"), newdata)
-newdata5 <- data.frame(trt =c("Scb1 in soybean"), newdata)
-newdata6 <- data.frame(trt =c("Scb1 in wheat stubble"), newdata)
+newdata15 <- data.frame(trt =c("Lin1 in soybean"), newdata)
+newdata16 <- data.frame(trt =c("Lin1 in wheat stubble"), newdata)
+newdata17 <- data.frame(trt =c("Npl1 in soybean"), newdata)
+newdata18 <- data.frame(trt =c("Npl1 in wheat stubble"), newdata)
+newdata19 <- data.frame(trt =c("Scb1 in soybean"), newdata)
+newdata20 <- data.frame(trt =c("Scb1 in wheat stubble"), newdata)
 
-nd=rbind(newdata1, newdata2, newdata3, newdata4, newdata5, newdata6)
+nd3 =rbind(newdata15, newdata16, newdata17, newdata18, newdata19, newdata20)
 
-pm <- predict(model3, newdata=nd, interval="confidence")
+pm <- predict(model3, newdata=nd3, interval="confidence")
 
-nd$p <- pm[,1] 
-nd$pmin <- pm[,2] 
-nd$pmax <- pm[,3] 
+nd3$p <- pm[,1] 
+nd3$pmin <- pm[,2] 
+nd3$pmax <- pm[,3] 
 
 north_platte$GDD0 <- north_platte$GDD
 north_platte$GDD0[north_platte$GDD0==0] <- 0.5
@@ -803,7 +806,7 @@ ggplot(aes(x = GDD, y = emergence, color = trt)) +
   #  coord_trans(x= "log") +
   geom_jitter(data = north_platte, aes(x = GDD, y = emergence, color = trt),
               alpha = 0.1) +
-  geom_line(data = nd, aes(x = GDD, y = p, color = trt), size = 1.2) +
+  geom_line(data = nd3, aes(x = GDD, y = p, color = trt), size = 1.2) +
   labs(y="Cumulative emergence (%)", x = "Growing degree days") +
   scale_color_brewer(name = NULL, palette = "Dark2") +
 #  scale_color_viridis_d(name = NULL, option = "C") +
@@ -834,7 +837,7 @@ ggplot(aes(x = GDD, y = emergence, color = trt)) +
   theme_few() +
   theme(axis.title = element_markdown(size = 10),
         axis.text = element_markdown(size = 9),
-        legend.position = c(0.75, 0.2),
+        legend.position = c(0.75, 0.25),
         legend.text = element_text(size = 5),
         legend.key.size = unit(0.3, "cm")) -> fig8
 
@@ -927,7 +930,7 @@ ggsave("figures/fig_9.png")
 ```{r}
 fig9 + fig8 -> figg
 
-fig_np <- figg / fig7 +
+wrap_elements(full = figg) / fig7 +
   plot_annotation(title = "<b style='color:darkgreen;'>Horseweed</b> emergence in wheat stubble and soybean at North Platte, NE",
        subtitle = "Horseweed accessions comulative emergence was recorded from Sep 2016 to May 2017",
        theme = theme(plot.title = element_markdown(hjust = 0, 
@@ -936,6 +939,6 @@ fig_np <- figg / fig7 +
                      plot.subtitle = element_markdown(family = "roboto",
                                                       size = 10))) 
 
-ggsave("figures/north_platte.png", width = 7)
+ggsave("figures/north_platte.png", width = 7, height = 7)
 ```
 
