@@ -13,6 +13,10 @@ library(reactable)
 library(ggthemes)
 library(ggtext)
 library(patchwork)
+library(extrafont)
+library(showtext)
+showtext_auto()
+font_add_google("Roboto", "roboto") 
 ```
 
 # Scottsbluff
@@ -88,7 +92,7 @@ ED(model1, c(10, 50, 90), type = "absolute", interval = "delta") %>%
   janitor::clean_names() %>% 
   separate("trt", c("population", "type"), sep = " in ", remove = FALSE) %>% 
 #  mutate(location = str_to_title(location)) %>% 
-  mutate_if(is_character, as_factor) -> ed2
+  mutate_if(is_character, as_factor) -> ed1
 ```
 
 ```{r}
@@ -96,31 +100,32 @@ EDcomp(model1, c(90,90), type = "absolute",
        interval = "delta", level = 0.95)
 ```
 
+```{r}
+readxl::read_excel("dates.xlsx", sheet = "Scottsbluff") %>% 
+  drop_na() %>% 
+  mutate(month = lubridate::month(date),
+         doy = lubridate::yday(date)) -> date_sct
+```
 
 ```{r}
-ed2 %>% 
+ed1 %>% 
   mutate(ed = case_when(
   ed == "10" ~ "10% emergence",
   ed == "50" ~ "50% emergence",
   ed == "90" ~ "90% emergence",
   TRUE ~ "ed")) %>% 
   ggplot(aes(x = fct_reorder(trt, estimate), y = estimate, color = trt)) +
-  geom_point(
-#    position = position_dodge(width = 0.7)
-    ) +
-  geom_linerange(aes(ymin = lower, ymax = upper), 
-#                 position = position_dodge(width = 0.7)
-                 ) +
-  labs(x = NULL, y = "Growing degree days"#,
-#       title = "Horseweed emergence in <b style='color:#0000ff;'>wheat stubble</b> and <b style='color:#b02631;'>soybean</b> at North Platte, NE",
-#       subtitle = "Horseweed accessions comulative emergence was recorded from Sep 2016 to May 2017"
-) +
+  geom_point() +
+  geom_linerange(aes(ymin = lower, ymax = upper)) +
+  labs(x = NULL, y = "Growing degree days") +
   scale_color_brewer(palette = "Set1") +
-#  scale_color_viridis_d(name = NULL, option = "G") +
   facet_grid(~ ed, switch = "y") +
   coord_flip() +
   theme_few() +
-#  scale_y_continuous(limits = c(0, 1500)) +
+#  geom_rect(mapping=aes(xmin= 0.5, xmax= 0.75,
+#                        ymin= 0, ymax= 378.4195, color = NULL), 
+#            fill = "#80461b", alpha=0.05) +
+#  annotate("text", x = 0.63, y = 180, label = "September", size = 3) +
   theme(legend.position = "none",
         axis.title = element_markdown(size = 10),
         axis.text = element_markdown(size = 9),
@@ -305,12 +310,7 @@ ggsave("figures/fig_3.png")
 ```
 
 
-```{r}
-library(extrafont)
-library(showtext)
-showtext_auto()
-font_add_google("Roboto", "roboto") 
-```
+
 
 
 ```{r}
@@ -407,7 +407,7 @@ ED(model1, c(10, 50, 90), type = "absolute", interval = "delta") %>%
   janitor::clean_names() %>% 
   separate("trt", c("population", "type"), sep = " in ", remove = FALSE) %>% 
 #  mutate(location = str_to_title(location)) %>% 
-  mutate_if(is_character, as_factor) -> ed1
+  mutate_if(is_character, as_factor) -> ed2
 ```
 
 
@@ -416,9 +416,15 @@ EDcomp(model1, c(90,90), type = "absolute",
        interval = "delta", level = 0.95)
 ```
 
+```{r}
+readxl::read_excel("dates.xlsx", sheet = "Lincoln") %>% 
+  drop_na() %>% 
+  mutate(month = lubridate::month(date),
+         doy = lubridate::yday(date)) -> date_lin
+```
 
 ```{r}
-ed1 %>% 
+ed2 %>% 
   mutate(ed = case_when(
   ed == "10" ~ "10% emergence",
   ed == "50" ~ "50% emergence",
@@ -941,4 +947,10 @@ wrap_elements(full = figg) / fig7 +
 
 ggsave("figures/north_platte.png", width = 7, height = 7)
 ```
+
+
+
+
+
+
 
