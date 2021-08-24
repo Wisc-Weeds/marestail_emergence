@@ -1,0 +1,18 @@
+---
+title: "anova"
+author: "Maxwel Coura Oliveira"
+date: "8/3/2021"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(glmmTMB)
+```
+
+
+```{r}
+readxl::read_excel("anova.xlsx", sheet = "SB") %>% 
+  mutate_if(is_character, as_factor) -> sb_data
+```
+
