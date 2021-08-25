@@ -11,7 +11,7 @@ library(glmmTMB)
 library(emmeans)
 library(multcomp)
 ```
-
+# Scottsbluff
 
 ```{r}
 readxl::read_excel("anova.xlsx", sheet = "SB") %>% 
@@ -76,6 +76,74 @@ cld_1 %>%
         plot.subtitle = element_markdown(size = 10)) -> fig1
 
 ggsave("figures/fig_11.png", dpi = 300, width = 9)
+```
+
+# North Platte
+
+
+```{r}
+readxl::read_excel("anova.xlsx", sheet = "NP") %>% 
+  mutate_if(is_character, as_factor) %>% 
+  rename(rep = R,
+         pop = P,
+         treat = `T`) %>% 
+  mutate(trt = case_when(
+    pop == "L" & treat == "dry" ~ "Lin1 in fallow",
+    pop == "NP" & treat == "dry" ~ "Npl1 in fallow",
+    pop == "SB" & treat == "dry" ~ "Scb1 in fallow",
+    pop == "L" & treat == "ir" ~ "Lin1 in irrigated",
+    pop == "NP" & treat == "ir" ~ "Npl1 in irrigated",
+    pop == "SB" & treat == "ir" ~ "Scb1 in irrigated",
+    TRUE ~ NA_character_
+  )) %>% 
+  mutate(rep = as_factor(rep)) -> np_data
+```
+
+
+```{r}
+mod_2 = glmmTMB(density ~ trt + (1|rep),
+                family = poisson(), data = np_data)
+```
+
+```{r}
+glmmTMB:::Anova.glmmTMB(mod_2)
+```
+
+```{r}
+emmeans(mod_2, ~ trt, type = "response") -> em_2
+```
+
+
+```{r}
+cld(em_2, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE) %>% 
+  as_tibble() -> cld_2
+```
+
+
+```{r}
+cld_2 %>% 
+  ggplot(aes(x = trt, y = rate, color = trt)) +
+  geom_point() +
+  geom_linerange(aes(ymin = lower.CL, ymax = upper.CL)) +
+  labs(x = NULL, y = "Horseweed density") +
+#  scale_y_continuous(limits = c(0, 220)) +
+  scale_color_brewer(palette = "Set1") +
+#  facet_grid(~ ed, switch = "y") +
+  coord_flip() +
+  theme_few() +
+#  geom_rect(mapping=aes(xmin= 0.5, xmax= 0.75,
+#                        ymin= 0, ymax= 378.4195, color = NULL), 
+#            fill = "#80461b", alpha=0.05) +
+#  annotate("text", x = 0.63, y = 180, label = "September", size = 3) +
+  theme(legend.position = "none",
+        axis.title = element_markdown(size = 30),
+        axis.text = element_markdown(size = 28),
+        strip.text = element_markdown(size = 32, face = "italic"),
+        plot.title.position = "plot",
+        plot.title = element_markdown(),
+        plot.subtitle = element_markdown(size = 10)) -> fig1
+
+ggsave("figures/fig_21.png", dpi = 300, width = 9)
 ```
 
 

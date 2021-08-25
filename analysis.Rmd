@@ -456,6 +456,8 @@ ed2 %>%
 
 ggsave("figures/fig_4.png", dpi = 300)
 ```
+
+
 ```{r}
 ed1
 ```

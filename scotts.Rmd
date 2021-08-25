@@ -28,9 +28,9 @@ readxl::read_excel("data/Emergence.xlsx", sheet = "SCOTTSBLUFF") %>%
   separate("type", c("population", "type"), sep = "-") %>% 
   mutate_at(c("population", "type"), str_squish) %>% 
   mutate(population = fct_recode(population,
-                                 "Lin1" = "Lincoln",
-                                 "Npl1" = "North Platte",
-                                 "Scb1" = "Scottsbluff")) %>% 
+                                 "Lin" = "Lincoln",
+                                 "Npl" = "North Platte",
+                                 "Scb" = "Scottsbluff")) %>% 
   mutate(location = "Scottsbluff") %>% 
   filter(!is.na(GDD)) -> sctbf1
 ```
@@ -47,9 +47,9 @@ readxl::read_excel("data/Emergence.xlsx", sheet = "SCOTTSBLUFF") %>%
   separate("type", c("population", "type"), sep = "-") %>% 
   mutate_at(c("population", "type"), str_squish) %>% 
   mutate(population = fct_recode(population,
-                                 "Lin1" = "Lincoln",
-                                 "Npl1" = "North Platte",
-                                 "Scb1" = "Scottsbluff")) %>% 
+                                 "Lin" = "Lincoln",
+                                 "Npl" = "North Platte",
+                                 "Scb" = "Scottsbluff")) %>% 
   mutate(location = "Scottsbluff") -> sctbf2
 ```
 
@@ -112,12 +112,12 @@ ed1 %>%
   ed == "50" ~ "50% emergence",
   ed == "90" ~ "90% emergence",
   TRUE ~ "ed")) %>% 
-  mutate(trt = fct_relevel(trt, levels = c("Lin1 in irrigated",
-                                           "Scb1 in fallow",
-                                           "Lin1 in fallow",
-                                           "Npl1 in fallow",
-                                           "Npl1 in irrigated",
-                                           "Scb1 in irrigated"))) -> ed2
+  mutate(trt = fct_relevel(trt, levels = c("Lin in irrigated",
+                                           "Scb in fallow",
+                                           "Lin in fallow",
+                                           "Npl in fallow",
+                                           "Npl in irrigated",
+                                           "Scb in irrigated"))) -> ed2
 ```
 
 
@@ -175,12 +175,12 @@ readxl::read_excel("anova.xlsx", sheet = "SB") %>%
          pop = P,
          treat = `T`) %>% 
   mutate(trt = case_when(
-    pop == "L" & treat == "dry" ~ "Lin1 in fallow",
-    pop == "NP" & treat == "dry" ~ "Npl1 in fallow",
-    pop == "SB" & treat == "dry" ~ "Scb1 in fallow",
-    pop == "L" & treat == "ir" ~ "Lin1 in irrigated",
-    pop == "NP" & treat == "ir" ~ "Npl1 in irrigated",
-    pop == "SB" & treat == "ir" ~ "Scb1 in irrigated",
+    pop == "L" & treat == "dry" ~ "Lin in fallow",
+    pop == "NP" & treat == "dry" ~ "Npl in fallow",
+    pop == "SB" & treat == "dry" ~ "Scb in fallow",
+    pop == "L" & treat == "ir" ~ "Lin in irrigated",
+    pop == "NP" & treat == "ir" ~ "Npl in irrigated",
+    pop == "SB" & treat == "ir" ~ "Scb in irrigated",
     TRUE ~ NA_character_
   )) %>% 
   mutate(rep = as_factor(rep)) -> sb_data
@@ -204,12 +204,12 @@ emmeans(mod_1, ~ trt, type = "response") -> em_1
 ```{r}
 cld(em_1, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE) %>% 
   as_tibble() %>% 
-  mutate(trt = fct_relevel(trt, levels = c("Lin1 in irrigated",
-                                           "Scb1 in fallow",
-                                           "Lin1 in fallow",
-                                           "Npl1 in fallow",
-                                           "Npl1 in irrigated",
-                                           "Scb1 in irrigated"))) -> cld_1
+  mutate(trt = fct_relevel(trt, levels = c("Lin in irrigated",
+                                           "Scb in fallow",
+                                           "Lin in fallow",
+                                           "Npl in fallow",
+                                           "Npl in irrigated",
+                                           "Scb in irrigated"))) -> cld_1
 ```
 
 
@@ -218,7 +218,7 @@ cld_1 %>%
   ggplot(aes(x = fct_reorder(trt, rate), y = rate, color = trt)) +
   geom_point() +
   geom_linerange(aes(ymin = lower.CL, ymax = upper.CL)) +
-  labs(x = NULL, y = expression(paste("Horseweed density (plants m"^"2",")"))) +
+  labs(x = NULL, y = expression(paste("Horseweed density (plants plot"^"-1",")"))) +
   scale_y_continuous(limits = c(0, 1100), breaks = seq(0, 1000, 200)) +
   geom_text_repel(aes(label = round(rate,0), 
                          x = trt, color = trt),
@@ -246,12 +246,12 @@ cld_1 %>%
 
 ```{r Control prediction, include=FALSE}
 newdata <- expand.grid(GDD=exp(seq(log(0.5), log(760), length=760)))
-newdata1 <- data.frame(trt =c("Lin1 in fallow"), newdata)
-newdata2 <- data.frame(trt =c("Lin1 in irrigated"), newdata)
-newdata3 <- data.frame(trt =c("Npl1 in fallow"), newdata)
-newdata4 <- data.frame(trt =c("Npl1 in irrigated"), newdata)
-newdata5 <- data.frame(trt =c("Scb1 in fallow"), newdata)
-newdata6 <- data.frame(trt =c("Scb1 in irrigated"), newdata)
+newdata1 <- data.frame(trt =c("Lin in fallow"), newdata)
+newdata2 <- data.frame(trt =c("Lin in irrigated"), newdata)
+newdata3 <- data.frame(trt =c("Npl in fallow"), newdata)
+newdata4 <- data.frame(trt =c("Npl in irrigated"), newdata)
+newdata5 <- data.frame(trt =c("Scb in fallow"), newdata)
+newdata6 <- data.frame(trt =c("Scb in irrigated"), newdata)
 
 nd=rbind(newdata1, newdata2, newdata3, newdata4, newdata5, newdata6)
 
@@ -268,20 +268,20 @@ scottsbluff$GDD0[scottsbluff$GDD0==0] <- 0.5
 
 ```{r Control Plot, message=FALSE, warning=FALSE}
 scottsbluff %>% 
-    mutate(trt = fct_relevel(trt, levels = c("Lin1 in irrigated",
-                                           "Scb1 in fallow",
-                                           "Lin1 in fallow",
-                                           "Npl1 in fallow",
-                                           "Npl1 in irrigated",
-                                           "Scb1 in irrigated"))) -> scottsbluff1
+    mutate(trt = fct_relevel(trt, levels = c("Lin in irrigated",
+                                           "Scb in fallow",
+                                           "Lin in fallow",
+                                           "Npl in fallow",
+                                           "Npl in irrigated",
+                                           "Scb in irrigated"))) -> scottsbluff1
 
 nd %>% 
-    mutate(trt = fct_relevel(trt, levels = c("Lin1 in irrigated",
-                                           "Scb1 in fallow",
-                                           "Lin1 in fallow",
-                                           "Npl1 in fallow",
-                                           "Npl1 in irrigated",
-                                           "Scb1 in irrigated"))) -> nd1
+    mutate(trt = fct_relevel(trt, levels = c("Lin in irrigated",
+                                           "Scb in fallow",
+                                           "Lin in fallow",
+                                           "Npl in fallow",
+                                           "Npl in irrigated",
+                                           "Scb in irrigated"))) -> nd1
 ```
 
 
@@ -291,9 +291,9 @@ ggplot(aes(x = GDD, y = emergence, color = trt)) +
   geom_line(data = nd1, aes(x = GDD, y = p, color = trt), size = 1) +
   labs(y="Cumulative emergence (%)", x = "Growing degree days") +
   coord_trans(x= "log") +
-  geom_point(alpha = 0.1) +
-#  geom_jitter(data = scottsbluff, aes(x = GDD, y = emergence, color = trt),
-#              alpha = 0.1) +
+#  geom_point(alpha = 0.1) +
+  geom_jitter(data = scottsbluff1, aes(x = GDD, y = emergence, color = trt),
+              alpha = 0.1) +
   scale_x_continuous(limits = c(1, 1000), breaks = c(1, 10, 100, 1000)) + 
   scale_color_brewer(name = NULL, palette = "Paired",
                            guide = guide_legend(reverse = TRUE)) +

@@ -1,0 +1,329 @@
+---
+title: "north_platte"
+author: "Maxwel Coura Oliveira"
+date: "8/25/2021"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(drc)
+library(reactable)
+library(ggthemes)
+library(ggtext)
+library(patchwork)
+library(ggrepel)
+```
+
+```{r}
+readxl::read_excel("data/Emergence.xlsx", sheet = "North Platte") %>% 
+  janitor::row_to_names(row_number = 1) %>% 
+  dplyr::select(1:4) %>% 
+  pivot_longer(cols = 2:4, names_to = "type", values_to = "emergence") %>% 
+  mutate(date = "Sep 2016 - May 2017") %>% 
+  mutate_at(c("GDD", "emergence"),  as.double) %>% 
+  mutate_at(c("GDD", "emergence"), ~ round(., 2)) %>% 
+  separate("type", c("population", "type"), sep = "-") %>% 
+  mutate_at(c("population", "type"), str_squish) %>% 
+  mutate(population = fct_recode(population,
+                                 "Lin" = "Lincoln",
+                                 "Npl" = "North Platte",
+                                 "Scb" = "Scottsbluff")) %>% 
+  mutate(location = "North Platte") %>% 
+  filter(!is.na(GDD)) -> np1
+```
+
+
+```{r}
+readxl::read_excel("data/Emergence.xlsx", sheet = "North Platte") %>% 
+  janitor::row_to_names(row_number = 1) %>% 
+  dplyr::select(5:8) %>% 
+  pivot_longer(cols = 2:4, names_to = "type", values_to = "emergence") %>% 
+  mutate(date = "Sep 2016 - May 2017") %>% 
+  mutate_at(c("GDD", "emergence"),  as.double) %>% 
+  mutate_at(c("GDD", "emergence"), ~ round(., 2)) %>% 
+  separate("type", c("population", "type"), sep = "-") %>% 
+  mutate_at(c("population", "type"), str_squish) %>% 
+  mutate(population = fct_recode(population,
+                                 "Lin" = "Lincoln",
+                                 "Npl" = "North Platte",
+                                 "Scb" = "Scottsbluff")) %>% 
+  mutate(location = "North Platte") %>% 
+  filter(!is.na(GDD)) -> np2
+```
+
+
+
+```{r}
+np1 %>% 
+  bind_rows(np2) %>% 
+  mutate(type = str_to_lower(type)) %>% 
+  unite("trt", c("population", "type"), sep = " in ", remove = FALSE) %>% 
+  drop_na() -> north_platte
+```
+
+
+
+
+```{r message = FALSE, warning = FALSE}
+model3 <- drm(emergence ~ GDD, trt, 
+              fct = W1.3(fixed = c(NA, 100, NA), 
+                         names = c("slope", "upper", "ed50")),
+              data = north_platte)
+```
+
+```{r}
+plot(model3, type = "all")
+```
+
+
+  
+```{r}
+ED(model3, c(10, 50, 90), type = "absolute", interval = "delta") %>% 
+  as.data.frame() %>% 
+  rownames_to_column(., var = "name") %>% 
+  as_tibble() %>% 
+  separate(name, c("param", "trt", "ED"), sep = ":") %>% 
+  janitor::clean_names() %>% 
+  separate("trt", c("population", "type"), sep = " in ", remove = FALSE) %>% 
+#  mutate(location = str_to_title(location)) %>% 
+  mutate_if(is_character, as_factor) -> ed3
+```
+
+```{r}
+EDcomp(model3, c(90,90), type = "absolute", 
+       interval = "delta", level = 0.95)
+```
+
+```{r warning = FALSE}
+ed3 %>% 
+  mutate(ed = case_when(
+  ed == "10" ~ "10% emergence",
+  ed == "50" ~ "50% emergence",
+  ed == "90" ~ "90% emergence",
+  TRUE ~ "ed")) -> ed4
+#  mutate(trt = fct_relevel(trt, levels = c("Lin in irrigated",
+#                                           "Scb in fallow",
+#                                           "Lin in fallow",
+#                                           "Npl in fallow",
+#                                           "Npl in irrigated",
+#                                           "Scb in irrigated"))) 
+```
+
+
+```{r}
+ed4 %>% 
+ggplot(aes(x = trt, y = estimate, color = trt, shape = ed)) +
+  geom_point(position = position_dodge2(width = 0.4)) +
+  geom_linerange(aes(ymin = lower, ymax = upper),
+                 position = position_dodge2(width = 0.4)) +
+  labs(x = NULL, y = "Growing degree days", shape = NULL) +
+  scale_y_continuous(limits = c(0, 1500)) +
+  coord_flip() +
+  scale_color_brewer(palette = "Paired") +
+  scale_shape_manual(values = c(8,9,10)) +
+  geom_text_repel(data = ed4, mapping = aes(label = round(estimate,0), 
+                         x = trt, color = trt),
+                    size = 2.5,
+                    force_pull = 0,
+                    direction = "y",
+                    point.padding = NA,
+                    min.segment.length = 14,
+                    vjust = 0.5,
+                    position = position_dodge2(width = 0.4),
+                    seed = 455) +
+  
+  theme_few() +
+  theme(legend.position = c(0.17, 0.1),
+        legend.direction = "vertical",
+        legend.text = element_markdown(size = 6, lineheight = 0.3),
+        legend.background = element_rect(colour = NA, fill = NA),
+        legend.key = element_rect(colour = NA, fill = NA),
+        legend.key.size = unit(0.4, "cm"),
+        axis.title = element_markdown(size = 12),
+        axis.text = element_markdown(size = 11)) +
+  guides(color = "none") -> fig7
+
+
+ggsave("figures/fig_7.png", dpi = 300)
+```
+
+
+
+
+
+```{r}
+library(glmmTMB)
+library(emmeans)
+library(multcomp)
+```
+
+
+```{r}
+readxl::read_excel("anova.xlsx", sheet = "NP") %>% 
+  mutate_if(is_character, as_factor) %>% 
+  rename(rep = R,
+         pop = P,
+         treat = `T`,
+         time = S) %>% 
+  mutate(trt = case_when(
+    pop == "L" & treat == "dry" ~ "Lin in wheat stubble",
+    pop == "NP" & treat == "dry" ~ "Npl in wheat stubble",
+    pop == "SB" & treat == "dry" ~ "Scb in wheat stubble",
+    pop == "L" & treat == "ir" ~ "Lin in soybean",
+    pop == "NP" & treat == "ir" ~ "Npl in soybean",
+    pop == "SB" & treat == "ir" ~ "Scb in soybean",
+    TRUE ~ NA_character_
+  )) %>% 
+  mutate(rep = as_factor(rep)) -> np_data
+```
+
+
+```{r}
+mod_3 = glmmTMB(density ~ trt * time + (1|rep),
+                family = poisson(), data = np_data)
+```
+
+```{r}
+glmmTMB:::Anova.glmmTMB(mod_3)
+```
+
+```{r}
+emmeans(mod_3, ~ trt * time, type = "response") -> em_3
+```
+
+
+```{r}
+cld(em_3, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE) %>% 
+  as_tibble() -> cld_3
+#  mutate(trt = fct_relevel(trt, levels = c("Lin in irrigated",
+#                                           "Scb in fallow",
+#                                           "Lin in fallow",
+#                                           "Npl in fallow",
+#                                           "Npl in irrigated",
+#                                           "Scb in irrigated"))) 
+```
+
+
+```{r}
+cld_3 %>% 
+  ggplot(aes(x = fct_reorder(trt, rate), y = rate, 
+             color = trt, shape = time)) +
+  geom_point(position = position_dodge2(width = 0.4, reverse = TRUE)) +
+  geom_linerange(aes(ymin = lower.CL, ymax = upper.CL),
+                 position = position_dodge2(width = 0.4, reverse = TRUE)) +
+  labs(x = NULL, 
+       y = expression(paste("Horseweed density (plants plot"^"-1",")")),
+       shape = NULL) +
+  scale_y_continuous(limits = c(0, 400), breaks = seq(0, 400, 50)) +
+  scale_shape_manual(values = c(16,15)) +
+  geom_text_repel(aes(label = round(rate,0), 
+                         x = trt, color = trt),
+                    size = 2.5,
+                    force_pull = 0,
+                    direction = "y",
+                    point.padding = NA,
+                    min.segment.length = 14,
+                    vjust = 0.5,
+                    position = position_dodge2(width = 0.4, reverse = TRUE),
+                    seed = 455) +
+  scale_color_brewer(palette = "Paired") +
+#  facet_grid(~ ed, switch = "y") +
+  coord_flip() +
+  theme_few() +
+  theme(legend.position = c(0.8, 0.1),
+        legend.text = element_markdown(size = 9, lineheight = 0.3),
+        legend.background = element_rect(colour = NA, fill = NA),
+        legend.key = element_rect(colour = NA, fill = NA),
+        axis.title = element_markdown(size = 12),
+        axis.text = element_markdown(size = 11)) +
+  guides(color = "none") -> fig8
+
+
+ggsave("figures/fig_11.png", dpi = 300, width = 9)
+```
+
+
+
+
+
+
+```{r Control prediction, include=FALSE}
+newdata <- expand.grid(GDD=exp(seq(log(0.5), log(2000), length=2000)))
+newdata15 <- data.frame(trt = "Lin in soybean", newdata)
+newdata16 <- data.frame(trt = "Lin in wheat stubble", newdata)
+newdata17 <- data.frame(trt = "Npl in soybean", newdata)
+newdata18 <- data.frame(trt = "Npl in wheat stubble", newdata)
+newdata19 <- data.frame(trt = "Scb in soybean", newdata)
+newdata20 <- data.frame(trt = "Scb in wheat stubble", newdata)
+
+nd3 =rbind(newdata15, newdata16, newdata17, newdata18, newdata19, newdata20)
+
+pm <- predict(model3, newdata=nd3, interval="confidence")
+
+nd3$p <- pm[,1] 
+nd3$pmin <- pm[,2] 
+nd3$pmax <- pm[,3] 
+
+north_platte$GDD0 <- north_platte$GDD
+north_platte$GDD0[north_platte$GDD0==0] <- 0.5
+```
+
+
+```{r Control Plot, message=FALSE, warning=FALSE}
+north_platte %>% 
+  ggplot(aes(x = GDD, y = emergence, 
+           color = trt)) + 
+  coord_trans(x= "log") +
+  geom_jitter(data = north_platte, aes(x = GDD, y = emergence, color = trt),
+              alpha = 0.1) +
+  geom_point(alpha = 0.1) +
+  geom_line(data = nd3, aes(x = GDD, y = p, color = trt), size = 1.2) +
+  labs(y="Cumulative emergence (%)", x = "Growing degree days") +
+  scale_color_brewer(name = NULL, palette = "Paired",
+                           guide = guide_legend(reverse = TRUE)) +
+  scale_x_continuous(limits = c(1, 3000), breaks = c(1, 10, 100, 1000)) +
+  geom_segment(aes(x = 25, y = 10, 
+                   xend = 150, yend = 10), 
+               arrow = arrow(length = unit(0.03, "npc")), 
+               size = 0.8,
+               color = "#333333") +
+  annotate("text", x = 270, y = 10, label = "10%", 
+           fontface = 'italic',
+           size = 3) +
+  geom_segment(aes(x = 70, y = 50, 
+                   xend = 360, yend = 50), 
+               arrow = arrow(length = unit(0.03, "npc")),
+               size = 0.8,
+               color = "#333333") +
+  annotate("text", x = 615, y = 50, label = "50%", 
+           fontface = 'italic',
+           size = 3) +
+  geom_segment(aes(x = 230, y = 90, 
+                   xend = 1600, yend = 90), 
+               arrow = arrow(length = unit(0.03, "npc")),
+               size = 0.8,
+               color = "#333333") +
+  annotate("text", x = 2300, y = 90, label = "90%", 
+           fontface = 'italic',
+           size = 3) +
+  theme_few() +
+  theme(axis.title = element_markdown(size = 12),
+        axis.text = element_markdown(size = 11),
+        legend.position = c(0.26, 0.87),
+        legend.background = element_rect(colour = NA, fill = NA),
+        legend.key = element_rect(colour = NA, fill = NA),
+        legend.text = element_text(size = 7),
+        legend.key.size = unit(0.3, "cm"))  -> fig9
+
+#ggsave("figures/fig_8.png")
+```
+
+
+```{r warning = FALSE}
+fig9 + fig7 + fig8 +
+  plot_annotation(tag_levels = 'A') & 
+  theme(plot.tag = element_text(size = 12, hjust = 0, vjust = 0))
+
+ggsave("figures/north_platte.png", width = 12)
+```
