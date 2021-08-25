@@ -205,7 +205,109 @@ ggsave("figures/fig_2.png")
 ```
 
 
+```{r}
+readxl::read_excel("data/Scottsbluff Marestail.xlsx", sheet = "Weather Yr1") %>% 
+  janitor::row_to_names(row_number = 2) %>% 
+  janitor::clean_names() %>% 
+  rename(
+    temp_high = c,
+    temp_low = c_2,
+    rel_hum = percent,
+    precip = mm,
+    wind_sp = m_s,
+    soil_temp = c_10cm
+  ) %>% 
+  dplyr::select(-mj_m_2, -mm_2, -time) %>% 
+  unite("date", c("year", "month", "day"), sep = "-") %>% 
+  mutate(date = lubridate::ymd(date)) %>% 
+  mutate_if(is_character, as.double) -> wd_sct1
 
+readxl::read_excel("data/Scottsbluff Marestail.xlsx", sheet = "Weather Yr2") %>% 
+  janitor::row_to_names(row_number = 2) %>% 
+  janitor::clean_names() %>% 
+  rename(
+    temp_high = c,
+    temp_low = c_2,
+    rel_hum = percent,
+    precip = mm,
+    wind_sp = m_s,
+    soil_temp = c_10cm
+  ) %>% 
+  dplyr::select(-mj_m_2, -mm_2, -time) %>% 
+  unite("date", c("year", "month", "day"), sep = "-") %>% 
+  mutate(date = lubridate::ymd(date)) %>% 
+  mutate_if(is_character, as.double) -> wd_sct2
+
+
+wd_sct1 %>% 
+  bind_rows(wd_sct2) %>% 
+  mutate(mean_temp = (temp_high + temp_low) / 2) %>% 
+  pivot_longer(cols = c("mean_temp", "soil_temp"), 
+               names_to = "type", values_to = "temp") -> wd_sct
+```
+
+```{r}
+ylim.prim <- c(0, 100)   # in this example, precipitation
+ylim.sec <- c(-27, 36)    # in this example, temperature
+
+b <- diff(ylim.prim)/diff(ylim.sec)
+a <- ylim.prim[1] - b*ylim.sec[1] # there was a bug here
+```
+
+
+```{r}
+wd_sct %>% 
+  filter(date < as.Date("2018-01-30")) %>% 
+  mutate(type = fct_recode(type,
+                           "Air temperature (C)" = "mean_temp",
+                           "Soil temperature (C)" = "soil_temp")) %>% 
+  ggplot(aes(x = date, y = a + temp*b)) +
+  geom_rect(mapping=aes(xmin= as.Date("2016-08-30"), xmax= as.Date("2017-04-03"),
+                        ymin= 0, ymax= 100), 
+            fill = "#FFFDD0", alpha=0.05) + 
+#  annotate("text", x=as.Date("2016-12-15"), y = 155, 
+#           label = "Year 1",
+#           size = 15, color = "black") + 
+  geom_rect(mapping=aes(xmin= as.Date("2017-09-25"), xmax= as.Date("2017-12-31"),
+                        ymin= 0, ymax= 100), 
+            fill = "#FFFDD0", alpha=0.05) + 
+#  annotate("text", x=as.Date("2017-11-20"), y = 155, 
+#           label = "Year 2", face = "bold",
+#           size = 15, color = "black") + 
+  geom_point(aes(color = type), size = 1, alpha = 0.5) +
+  geom_line(aes(color = type, linetype = type), size = .3) +
+  scale_color_manual(name = NULL, values = c("blue", "firebrick")) +
+  scale_shape_manual(name = NULL, values = c(18, 16)) +
+  scale_linetype_manual(name = NULL, values = c(3, 1)) +
+  scale_y_continuous(
+    "Precipitation (mm)", 
+    sec.axis = sec_axis(~ (. - a)/b, name = "Temperature (C)")) +
+  scale_x_date(date_minor_breaks = "1 day", date_labels = "%b %Y") +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  geom_bar(aes(x = date, y = precip, 
+               width = 3,
+               linetype = NULL, 
+               shape = NULL), 
+           stat = "identity", 
+           fill = "grey10",
+           show.legend = FALSE) +
+  annotate("text", x=as.Date("2016-08-30"), y = 70, 
+           label = "Precipitation",
+           size = 15, color = "grey10") +
+  annotate("text", x=as.Date("2016-12-30"), y = 10, 
+           label = "Mean \nair temperature", lineheight = 0.3,
+           size = 15, color = "blue") +
+#  annotate("text", x=as.Date("2017-01-15"), y = 140, 
+#           label = "Mean\n soil temperature", lineheight = 0.3,
+#           size = 15, color = "firebrick") +
+  labs(x = NULL) +
+  theme(legend.position = "none",
+        axis.title = element_markdown(size = 30),
+        axis.text = element_markdown(size = 28)) -> fig3
+
+ggsave("figures/fig_3.png")
+```
 
 
 

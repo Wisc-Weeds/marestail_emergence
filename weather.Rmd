@@ -55,7 +55,7 @@ a <- ylim.prim[1] - b*ylim.sec[1] # there was a bug here
 ```
 
 
-```{r}
+```{r warning = FALSE}
 wd_sct %>% 
   filter(date < as.Date("2018-01-30")) %>% 
   mutate(type = fct_recode(type,
@@ -66,14 +66,14 @@ wd_sct %>%
                         ymin= 0, ymax= 150), 
             fill = "#FFFDD0", alpha=0.05) + 
   annotate("text", x=as.Date("2016-12-15"), y = 145, 
-           label = "Year 1",
-           size = 15, color = "black") + 
+           label = "Year 1", fontface = "bold",
+           size = 12, color = "#333333") + 
   geom_rect(mapping=aes(xmin= as.Date("2017-09-25"), xmax= as.Date("2017-12-31"),
                         ymin= 0, ymax= 150), 
             fill = "#FFFDD0", alpha=0.05) + 
-  annotate("text", x=as.Date("2017-11-20"), y = 145,
-           label = "Year 2", face = "bold",
-           size = 15, color = "black") + 
+  annotate("text", x=as.Date("2017-11-12"), y = 145,
+           label = "Year 2", fontface = "bold",
+           size = 12, color = "#333333") + 
   geom_point(aes(color = type), size = 1, alpha = 0.5) +
   geom_line(aes(color = type, linetype = type), size = .3) +
   scale_color_manual(name = NULL, values = c("blue", "firebrick")) +
@@ -81,7 +81,8 @@ wd_sct %>%
   scale_linetype_manual(name = NULL, values = c(3, 1)) +
   scale_y_continuous(
     "Precipitation (mm)", 
-    sec.axis = sec_axis(~ (. - a)/b, name = "Temperature (C)")) +
+        sec.axis = sec_axis(~ (. - a)/b, name = "Temperature (C)",
+                        breaks = seq(-25, 35, 10))) +
   scale_x_date(date_minor_breaks = "1 day", date_labels = "%b %Y") +
   theme_bw() +
   theme(legend.position = "bottom") +
@@ -92,23 +93,21 @@ wd_sct %>%
            stat = "identity", 
            fill = "#333333",
            show.legend = FALSE) +
-  annotate("text", x=as.Date("2016-08-30"), y = 55, 
-           label = "Precipitation",
-           size = 15, color = "grey10") +
-  annotate("text", x=as.Date("2016-12-30"), y = 10, 
-           label = "Mean \nair temperature", lineheight = 0.3,
-           size = 15, color = "blue") +
-  annotate("text", x=as.Date("2017-01-15"), y = 90, 
-           label = "Mean\n soil temperature", lineheight = 0.3,
-           size = 15, color = "firebrick") +
+  annotate("text", x=as.Date("2016-08-25"), y = 55, 
+           label = "Precipitation", 
+           size = 10, color = "#333333") +
+  annotate("text", x=as.Date("2017-05-30"), y = 58, 
+           label = "Mean \nair \ntemperature", lineheight = 0.3,
+           size = 10, color = "blue", hjust = 0) +
+  annotate("text", x=as.Date("2016-10-15"), y = 125, 
+           label = "Mean \nsoil \ntemperature", lineheight = 0.3,
+           size = 10, color = "firebrick", hjust = 0) +
   labs(x = NULL) +
   theme(legend.position = "none",
-        axis.title = element_markdown(size = 30),
-        axis.text = element_markdown(size = 28)) -> wscott
-
-ggsave("figures/fig_3.png")
+        axis.title = element_markdown(size = 32),
+        axis.text = element_markdown(size = 30)) -> wscott
+#ggsave("figures/fig_3.png")
 ```
-
 
 
 
@@ -174,14 +173,12 @@ wd_lcn %>%
             fill = "#FFFDD0", alpha=0.05) + 
   annotate("text", x=as.Date("2017-01-01"), y = 145, 
            label = "Year 1", fontface = "bold", 
-           family = "roboto",
            size = 12, color = "#333333") + 
   geom_rect(mapping=aes(xmin= as.Date("2017-09-01"), xmax= as.Date("2018-06-20"),
                         ymin= 0, ymax= 150), 
             fill = "#FFFDD0", alpha=0.05) + 
   annotate("text", x=as.Date("2018-02-01"), y = 145, 
            label = "Year 2", fontface = "bold", 
-           family = "roboto",
            size = 12, color = "#333333") + 
   geom_point(aes(color = type), size = 1, alpha = 0.5) +
   geom_line(aes(color = type, linetype = type), size = .3) +
@@ -202,7 +199,7 @@ wd_lcn %>%
            stat = "identity", 
            fill = "#333333",
            show.legend = FALSE) +
-  annotate("text", x=as.Date("2017-01-08"), y = 20, 
+  annotate("text", x=as.Date("2017-01-09"), y = 20, 
            label = "Precipitation",
            size = 10, color = "#333333") +
   annotate("text", x=as.Date("2016-10-20"), y = 130, 
@@ -219,11 +216,7 @@ wd_lcn %>%
 #ggsave("figures/fig_6.png")
 ```
 
-```{r warning = FALSE}
-wscott + wlinc + wnp
 
-ggsave("figures/weather.png", width = 12)
-```
 
 
 ```{r}
@@ -272,9 +265,8 @@ wd_npt %>%
   geom_rect(mapping=aes(xmin= as.Date("2016-09-01"), xmax= as.Date("2017-05-30"),
                         ymin= 0, ymax= 150), 
             fill = "#FFFDD0", alpha=0.05) + 
-  annotate("text", x=as.Date("2017-01-01"), y = 145, 
+  annotate("text", x=as.Date("2017-01-15"), y = 145, 
            label = "Year 1", fontface = "bold", 
-           family = "roboto",
            size = 12, color = "#333333") + 
   geom_point(aes(color = type), size = 1, alpha = 0.5) +
   geom_line(aes(color = type, linetype = type), size = .3) +
@@ -315,7 +307,9 @@ wd_npt %>%
 
 
 ```{r warning = FALSE}
-wscott + wlinc + wnp
+wscott + wlinc + wnp +
+  plot_annotation(tag_levels = 'A') & 
+  theme(plot.tag = element_text(size = 30, hjust = 0, vjust = 0))
 
 ggsave("figures/weather.png", width = 12)
 ```

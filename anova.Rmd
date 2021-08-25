@@ -8,11 +8,78 @@ output: html_document
 ```{r}
 library(tidyverse)
 library(glmmTMB)
+library(emmeans)
+library(multcomp)
 ```
 
 
 ```{r}
 readxl::read_excel("anova.xlsx", sheet = "SB") %>% 
-  mutate_if(is_character, as_factor) -> sb_data
+  mutate_if(is_character, as_factor) %>% 
+  rename(rep = R,
+         pop = P,
+         treat = `T`) %>% 
+  mutate(trt = case_when(
+    pop == "L" & treat == "dry" ~ "Lin1 in fallow",
+    pop == "NP" & treat == "dry" ~ "Npl1 in fallow",
+    pop == "SB" & treat == "dry" ~ "Scb1 in fallow",
+    pop == "L" & treat == "ir" ~ "Lin1 in irrigated",
+    pop == "NP" & treat == "ir" ~ "Npl1 in irrigated",
+    pop == "SB" & treat == "ir" ~ "Scb1 in irrigated",
+    TRUE ~ NA_character_
+  )) %>% 
+  mutate(rep = as_factor(rep)) -> sb_data
 ```
+
+
+```{r}
+mod_1 = glmmTMB(dansity ~ trt + (1|rep),
+                family = poisson(), data = sb_data)
+```
+
+```{r}
+glmmTMB:::Anova.glmmTMB(mod_1)
+```
+
+```{r}
+emmeans(mod_1, ~ trt, type = "response") -> em_1
+```
+
+
+```{r}
+cld(em_1, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE) %>% 
+  as_tibble() -> cld_1
+```
+
+
+```{r}
+cld_1 %>% 
+  ggplot(aes(x = trt, y = rate, color = trt)) +
+  geom_point() +
+  geom_linerange(aes(ymin = lower.CL, ymax = upper.CL)) +
+  labs(x = NULL, y = "Horseweed density") +
+#  scale_y_continuous(limits = c(0, 220)) +
+  scale_color_brewer(palette = "Set1") +
+#  facet_grid(~ ed, switch = "y") +
+  coord_flip() +
+  theme_few() +
+#  geom_rect(mapping=aes(xmin= 0.5, xmax= 0.75,
+#                        ymin= 0, ymax= 378.4195, color = NULL), 
+#            fill = "#80461b", alpha=0.05) +
+#  annotate("text", x = 0.63, y = 180, label = "September", size = 3) +
+  theme(legend.position = "none",
+        axis.title = element_markdown(size = 30),
+        axis.text = element_markdown(size = 28),
+        strip.text = element_markdown(size = 32, face = "italic"),
+        plot.title.position = "plot",
+        plot.title = element_markdown(),
+        plot.subtitle = element_markdown(size = 10)) -> fig1
+
+ggsave("figures/fig_11.png", dpi = 300, width = 9)
+```
+
+
+
+
+
 
