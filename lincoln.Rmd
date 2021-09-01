@@ -30,9 +30,9 @@ readxl::read_excel("data/Emergence.xlsx", sheet = "Lincoln") %>%
   separate("type", c("population", "type"), sep = "-") %>% 
   mutate_at(c("population", "type"), str_squish) %>% 
   mutate(population = fct_recode(population,
-                                 "Lin1" = "Lincoln",
-                                 "Npl1" = "North Platte",
-                                 "Scb1" = "Scottsbluff")) %>% 
+                                 "Lin" = "Lincoln",
+                                 "Npl" = "North Platte",
+                                 "Scb" = "Scottsbluff")) %>% 
   mutate(location = "Lincoln") %>% 
   filter(!is.na(GDD)) -> lcn1
 ```
@@ -49,9 +49,9 @@ readxl::read_excel("data/Emergence.xlsx", sheet = "Lincoln") %>%
   separate("type", c("population", "type"), sep = "-") %>% 
   mutate_at(c("population", "type"), str_squish) %>% 
   mutate(population = fct_recode(population,
-                                 "Lin1" = "Lincoln",
-                                 "Npl1" = "North Platte",
-                                 "Scb1" = "Scottsbluff")) %>% 
+                                 "Lin" = "Lincoln",
+                                 "Npl" = "North Platte",
+                                 "Scb" = "Scottsbluff")) %>% 
   mutate(location = "Lincoln") %>% 
   filter(!is.na(GDD)) -> lcn2
 ```
@@ -124,13 +124,13 @@ ed2 %>%
 ```{r}
 ed3 %>% 
   mutate(trt = fct_relevel(trt, levels = c("Natural in soybean",
-                                           "Scb1 in soybean",
-                                           "Lin1 in soybean",
+                                           "Scb in soybean",
+                                           "Lin in soybean",
                                            "Natural in corn",
-                                           "Npl1 in soybean",
-                                           "Scb1 in corn",
-                                           "Npl1 in corn",
-                                           "Lin1 in corn"))) -> ed4 -> ed4
+                                           "Npl in soybean",
+                                           "Scb in corn",
+                                           "Npl in corn",
+                                           "Lin in corn"))) -> ed4 -> ed4
 ```
 
 
@@ -169,13 +169,7 @@ ggplot(aes(x = trt, y = estimate, color = trt, shape = ed)) +
 
 ggsave("figures/fig_4.png", dpi = 300)
 ```
-```{r warning = FALSE, message = FALSE}
-fig6 + fig4 + fig5 +
-  plot_annotation(tag_levels = 'A') & 
-  theme(plot.tag = element_text(size = 12, hjust = 0, vjust = 0))
 
-ggsave("figures/lincoln.png", width = 12)
-```
 
 
 
@@ -197,12 +191,12 @@ readxl::read_excel("anova.xlsx", sheet = "Lin") %>%
   mutate(trt = case_when(
     pop == "CK" & crop == "corn" ~ "Natural in corn",
     pop == "CK" & crop == "soy" ~ "Natural in soybean",
-    pop == "L" & crop == "corn" ~ "Lin1 in corn",
-    pop == "L" & crop == "soy" ~ "Lin1 in soybean",
-    pop == "NP" & crop == "corn" ~ "Npl1 in corn",
-    pop == "NP" & crop == "soy" ~ "Npl1 in soybean",
-    pop == "SB" & crop == "corn" ~ "Scb1 in corn",
-    pop == "SB" & crop == "soy" ~ "Scb1 in soybean",
+    pop == "L" & crop == "corn" ~ "Lin in corn",
+    pop == "L" & crop == "soy" ~ "Lin in soybean",
+    pop == "NP" & crop == "corn" ~ "Npl in corn",
+    pop == "NP" & crop == "soy" ~ "Npl in soybean",
+    pop == "SB" & crop == "corn" ~ "Scb in corn",
+    pop == "SB" & crop == "soy" ~ "Scb in soybean",
     TRUE ~ NA_character_
   )) %>% 
   mutate(rep = as_factor(rep)) -> lc_data
@@ -235,13 +229,13 @@ cld(em_2, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE) %>%
 ```{r}
 cld_2 %>% 
   mutate(trt = fct_relevel(trt, levels = c("Natural in soybean",
-                                           "Scb1 in soybean",
-                                           "Lin1 in soybean",
+                                           "Scb in soybean",
+                                           "Lin in soybean",
                                            "Natural in corn",
-                                           "Npl1 in soybean",
-                                           "Scb1 in corn",
-                                           "Npl1 in corn",
-                                           "Lin1 in corn"))) -> ed4 -> cld3
+                                           "Npl in soybean",
+                                           "Scb in corn",
+                                           "Npl in corn",
+                                           "Lin in corn"))) -> ed4 -> cld3
 ```
 
 
@@ -253,7 +247,7 @@ cld3 %>%
   geom_linerange(aes(ymin = lower.CL, ymax = upper.CL),
                  position = position_dodge2(width = 0.4, reverse = TRUE)) +
   labs(x = NULL, 
-       y = expression(paste("Horseweed density (plants m"^"2",")")),
+       y = expression(paste("Horseweed density (plants plot"^"-1",")")),
        shape = NULL) +
   scale_y_continuous(limits = c(0, 1000), breaks = seq(0, 1000, 200)) +
   scale_shape_manual(values = c(16,15)) +
@@ -287,12 +281,12 @@ cld3 %>%
 
 ```{r control-prediction, include=FALSE}
 newdata <- expand.grid(GDD=exp(seq(log(0.5), log(1700), length=1700)))
-newdata7 <- data.frame(trt =c("Lin1 in corn"), newdata)
-newdata8 <- data.frame(trt =c("Lin1 in soybean"), newdata)
-newdata9 <- data.frame(trt =c("Npl1 in corn"), newdata)
-newdata10 <- data.frame(trt =c("Npl1 in soybean"), newdata)
-newdata11 <- data.frame(trt =c("Scb1 in corn"), newdata)
-newdata12 <- data.frame(trt =c("Scb1 in soybean"), newdata)
+newdata7 <- data.frame(trt =c("Lin in corn"), newdata)
+newdata8 <- data.frame(trt =c("Lin in soybean"), newdata)
+newdata9 <- data.frame(trt =c("Npl in corn"), newdata)
+newdata10 <- data.frame(trt =c("Npl in soybean"), newdata)
+newdata11 <- data.frame(trt =c("Scb in corn"), newdata)
+newdata12 <- data.frame(trt =c("Scb in soybean"), newdata)
 newdata13 <- data.frame(trt =c("Natural in corn"), newdata)
 newdata14 <- data.frame(trt =c("Natural in soybean"), newdata)
 
@@ -310,46 +304,43 @@ lincoln$GDD0[lincoln$GDD0==0] <- 0.5
 
     pop == "CK" & crop == "corn" ~ "Natural in corn",
     pop == "CK" & crop == "soy" ~ "Natural in soybean",
-    pop == "L" & crop == "corn" ~ "Lin1 in corn",
-    pop == "L" & crop == "soy" ~ "Lin1 in soybean",
-    pop == "NP" & crop == "corn" ~ "Npl1 in corn",
-    pop == "NP" & crop == "soy" ~ "Npl1 in soybean",
-    pop == "SB" & crop == "corn" ~ "Scb1 in corn",
-    pop == "SB" & crop == "soy" ~ "Scb1 in soybean",
+    pop == "L" & crop == "corn" ~ "Lin in corn",
+    pop == "L" & crop == "soy" ~ "Lin in soybean",
+    pop == "NP" & crop == "corn" ~ "Npl in corn",
+    pop == "NP" & crop == "soy" ~ "Npl in soybean",
+    pop == "SB" & crop == "corn" ~ "Scb in corn",
+    pop == "SB" & crop == "soy" ~ "Scb in soybean",
 
 ```{r Control Plot, message=FALSE, warning=FALSE}
 lincoln %>% 
   mutate(trt = fct_relevel(trt, levels = c("Natural in soybean",
-                                           "Scb1 in soybean",
-                                           "Lin1 in soybean",
+                                           "Scb in soybean",
+                                           "Lin in soybean",
                                            "Natural in corn",
-                                           "Npl1 in soybean",
-                                           "Scb1 in corn",
-                                           "Npl1 in corn",
-                                           "Lin1 in corn"))) -> ed4 -> lincoln1
+                                           "Npl in soybean",
+                                           "Scb in corn",
+                                           "Npl in corn",
+                                           "Lin in corn"))) -> ed4 -> lincoln1
 
 nd2 %>% 
   mutate(trt = fct_relevel(trt, levels = c("Natural in soybean",
-                                           "Scb1 in soybean",
-                                           "Lin1 in soybean",
+                                           "Scb in soybean",
+                                           "Lin in soybean",
                                            "Natural in corn",
-                                           "Npl1 in soybean",
-                                           "Scb1 in corn",
-                                           "Npl1 in corn",
-                                           "Lin1 in corn"))) -> ed4 -> nd3
+                                           "Npl in soybean",
+                                           "Scb in corn",
+                                           "Npl in corn",
+                                           "Lin in corn"))) -> ed4 -> nd3
 ```
 
 ```{r Control Plot, message=FALSE, warning=FALSE}
 lincoln1 %>% 
-    mutate(population = fct_relevel(population, 
-                                  levels = c("Lin1", "Npl1", "Scb1","Natural"))) %>% 
-ggplot(aes(x = GDD, y = emergence > 0, 
+  ggplot(aes(x = GDD, y = emergence,
            color = trt)) + 
+  geom_line(data = nd3, aes(x = GDD, y = p, color = trt), size = 1.2) +
   coord_trans(x= "log") +
   geom_jitter(data = lincoln1, aes(x = GDD, y = emergence, color = trt),
               alpha = 0.1) +
-#  geom_point(alpha = 0.1) +
-  geom_line(data = nd3, aes(x = GDD, y = p, color = trt), size = 1.2) +
   labs(y="Cumulative emergence (%)", x = "Growing degree days") +
   scale_color_brewer(name = NULL, palette = "Paired",
                            guide = guide_legend(reverse = TRUE)) +
