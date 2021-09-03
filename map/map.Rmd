@@ -76,15 +76,16 @@ ggplot(data = world) +
 #    geom_label(data = states, aes(X, Y, label = ID), size = 5, fontface = "bold", 
 #        nudge_y = states$nudge_y) +
     geom_text(data = sites, aes(x = longitude, y = latitude, label = location),
-              nudge_y = -0.2, color = 1) +
+              nudge_y = -0.2, color = "#333333", fontface = "bold") +
     labs(x = NULL, y = NULL) +
     annotation_scale(location = "bl", width_hint = 0.25) +
     annotation_north_arrow(location = "tr", which_north = "true", 
         pad_x = unit(0.1, "in"), pad_y = unit(0.1, "in"),
         style = north_arrow_nautical) +
-    coord_sf(xlim = c(-104.5, -95), ylim = c(43.2, 39.9), expand = FALSE)
+    coord_sf(xlim = c(-104.25, -95.2), ylim = c(43.1, 39.9), expand = FALSE) #+
+#  theme(plot.margin = unit(c(-6,0.3,-6,0.3), "cm"))
 
-ggsave("map.png")
+ggsave("map.png", width = 8, height = 4)
 ```
 
 # USA
