@@ -3,4 +3,4 @@ Marestail emergence in Nebraska
 
 
 
-![Map of Nebraska sites of the horseweed germination study](map/fig.png)
+![Map of Nebraska sites of the horseweed germination study](map/map.png)
