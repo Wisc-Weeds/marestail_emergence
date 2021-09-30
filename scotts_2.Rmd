@@ -1,0 +1,506 @@
+---
+title: "scotts_2"
+author: "Maxwel Coura Oliveira"
+date: "9/30/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(tidyverse)
+library(drc)
+library(reactable)
+library(ggthemes)
+library(ggtext)
+library(patchwork)
+library(ggrepel)
+```
+
+
+# Scottsbluff
+
+```{r}
+readxl::read_excel("data/Emergence.xlsx", sheet = "SCOTTSBLUFF") %>% 
+  janitor::row_to_names(row_number = 1) %>% 
+  dplyr::select(1:4) %>% 
+  pivot_longer(cols = 2:4, names_to = "type", values_to = "emergence") %>% 
+  mutate(date = "Sep 2016 - Apr 2017") %>% 
+  mutate_at(c("GDD", "emergence"),  as.double) %>% 
+  mutate_at(c("GDD", "emergence"), ~ round(., 2)) %>% 
+  separate("type", c("population", "type"), sep = "-") %>% 
+  mutate_at(c("population", "type"), str_squish) %>% 
+  mutate(population = fct_recode(population,
+                                 "Lin" = "Lincoln",
+                                 "Npl" = "North Platte",
+                                 "Scb" = "Scottsbluff")) %>% 
+  mutate(location = "Scottsbluff") %>% 
+  filter(!is.na(GDD)) -> sctbf1
+```
+
+
+
+```{r}
+readxl::read_excel("data/Emergence.xlsx", sheet = "SCOTTSBLUFF") %>% 
+  janitor::row_to_names(row_number = 1) %>% 
+  dplyr::select(7:13) %>% 
+  pivot_longer(cols = 2:7, names_to = "type", values_to = "emergence") %>% 
+  mutate(date = "Sep 2017 - Dec 2017") %>% 
+  mutate_at(c("GDD", "emergence"),  as.double) %>% 
+  mutate_at(c("GDD", "emergence"), ~ round(., 2)) %>% 
+  separate("type", c("population", "type"), sep = "-") %>% 
+  mutate_at(c("population", "type"), str_squish) %>% 
+  mutate(population = fct_recode(population,
+                                 "Lin" = "Lincoln",
+                                 "Npl" = "North Platte",
+                                 "Scb" = "Scottsbluff")) %>% 
+  mutate(location = "Scottsbluff") -> sctbf2
+```
+
+
+```{r}
+sctbf1 %>% 
+  bind_rows(sctbf2) %>% 
+  mutate(type = str_to_lower(type)) %>% 
+  mutate(type = fct_recode(type,
+                           "corn" = "irrigated")) |> 
+  unite("trt", c("population", "type"), sep = " in ", remove = FALSE) %>% 
+  drop_na() -> scottsbluff
+```
+
+
+```{r message = FALSE, warning = FALSE}
+crn_scott <- scottsbluff |> 
+  filter(type == "corn")
+
+model1 <- drm(emergence ~ GDD, population, 
+              fct = W1.3(fixed = c(NA, 100, NA), 
+                         names = c("slope", "upper", "ed50")),
+              data = crn_scott)
+```
+
+```{r}
+plot(model1)
+```
+
+
+```{r}
+broom::tidy(model1) %>% 
+  mutate_if(is.double, ~ round(., 2)) %>% 
+  reactable()
+```
+
+```{r}
+ED(model1, c(10, 50, 90), type = "absolute", interval = "delta") %>% 
+  as.data.frame() %>% 
+  rownames_to_column(., var = "name") %>% 
+  as_tibble() %>% 
+  separate(name, c("param", "trt", "ED"), sep = ":") %>% 
+  janitor::clean_names() %>% 
+#  mutate(location = str_to_title(location)) %>% 
+  mutate_if(is_character, as_factor) -> ed1
+```
+
+
+```{r}
+EDcomp(model1, c(90,90), type = "absolute", 
+       interval = "delta", level = 0.95)
+```
+
+
+
+
+
+```{r}
+readxl::read_excel("data/dates.xlsx", sheet = "Scottsbluff") %>% 
+  drop_na() %>% 
+  mutate(month = lubridate::month(date),
+         doy = lubridate::yday(date)) -> date_sct
+```
+ 
+ 
+ 
+```{r warning = FALSE}
+ed1 %>% 
+  mutate(ed = case_when(
+  ed == "10" ~ "10% emergence",
+  ed == "50" ~ "50% emergence",
+  ed == "90" ~ "90% emergence",
+  TRUE ~ "ed")) -> ed2
+```
+
+
+```{r}
+ed2 %>% 
+  mutate(crop = "Corn") |> 
+ggplot(aes(x = trt, y = estimate, color = trt, shape = ed)) +
+  geom_point(position = position_dodge2(width = 0.4), size = 1.5) +
+  geom_linerange(aes(ymin = lower, ymax = upper), size = 1.03,
+                 position = position_dodge2(width = 0.4)) +
+  labs(x = NULL, y = "Growing degree days", shape = NULL) +
+  scale_y_continuous(limits = c(0, 220)) +
+  coord_flip() +
+  facet_grid(~ crop) +
+  scale_color_colorblind(name = NULL) +
+  scale_shape_manual(values = c(8,9,10)) +
+  geom_text_repel(data = ed2, mapping = aes(label = round(estimate,0), 
+                         x = trt, color = trt),
+                    size = 2.5,
+                    force_pull = 0,
+                    direction = "y",
+                    point.padding = NA,
+                    min.segment.length = 14,
+                    vjust = 0.5,
+                    position = position_dodge2(width = 0.4),
+                    seed = 455) +
+  geom_curve(x = 0.8, y = 84, xend = 0.7, yend = 95,
+             arrow = arrow(length = unit(0.07, "inch")), 
+             size = 0.4, curvature = 0.3, color = 2) + 
+  annotate("text", x = 0.7, y = 100, label = "10% emergence", 
+           hjust = 0, size = 2.3, fontface = "italic") +
+  geom_curve(x = 1.94, y = 94, xend = 1.84, yend = 105,
+             arrow = arrow(length = unit(0.07, "inch")), 
+             size = 0.4, curvature = 0.3, color = 2) +
+  annotate("text", x = 1.84, y = 110, label = "50% emergence", 
+           hjust = 0, size = 2.3, fontface = "italic") +
+  geom_curve(x = 3.09, y = 160, xend = 2.99, yend = 171,
+             arrow = arrow(length = unit(0.07, "inch")), 
+             size = 0.4, curvature = 0.3, color = 2) + 
+  annotate("text", x = 2.99, y = 176, label = "90% emergence", 
+           hjust = 0, size = 2.3, fontface = "italic") +
+  theme_bw() +
+  theme(legend.position = "none",
+        strip.text = element_markdown(size = 10, 
+                                      face = "bold"),
+        axis.title = element_markdown(size = 12),
+        axis.text = element_markdown(size = 11)) +
+  guides(color = "none") -> fig1
+fig1
+```
+
+
+
+
+
+
+
+
+```{r}
+library(glmmTMB)
+library(emmeans)
+library(multcomp)
+```
+
+
+```{r}
+readxl::read_excel("anova.xlsx", sheet = "SB") %>% 
+  mutate_if(is_character, as_factor) %>% 
+  rename(rep = R,
+         pop = P,
+         treat = `T`) %>% 
+  mutate(trt = case_when(
+    pop == "L" & treat == "dry" ~ "Lin in fallow",
+    pop == "NP" & treat == "dry" ~ "Npl in fallow",
+    pop == "SB" & treat == "dry" ~ "Scb in fallow",
+    pop == "L" & treat == "ir" ~ "Lin in corn",
+    pop == "NP" & treat == "ir" ~ "Npl in corn",
+    pop == "SB" & treat == "ir" ~ "Scb in corn",
+    TRUE ~ NA_character_
+  )) |> 
+  separate("trt", c("population", "crop"), sep = " in ") %>% 
+  mutate(rep = as_factor(rep)) -> sb_data
+```
+
+
+```{r}
+crn_sct_a <- sb_data |> 
+  filter(crop == "corn")
+
+mod_1 = glmmTMB(dansity ~ population + (1|rep),
+                family = poisson(), data = crn_sct_a)
+```
+
+```{r}
+glmmTMB:::Anova.glmmTMB(mod_1)
+```
+
+```{r}
+emmeans(mod_1, ~ population, type = "response") -> em_1
+```
+
+
+```{r}
+cld(em_1, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE) %>% 
+  as_tibble() -> cld_1
+```
+
+
+```{r}
+cld_1 %>% 
+  mutate(crop = "Corn") |> 
+  ggplot(aes(x = fct_reorder(population, rate), y = rate, color = population)) +
+  geom_linerange(aes(ymin = lower.CL, ymax = upper.CL), size = 1.03) +
+  geom_point(size = 1.5) +
+  labs(x = NULL, y = expression(paste("Horseweed density (plants plot"^"-1",")"))) +
+  scale_y_continuous(limits = c(0, 1100), breaks = seq(0, 1100, 200)) +
+  facet_grid(~ crop) +
+  geom_text_repel(aes(label = round(rate,0), 
+                         x = population, color = population),
+                    size = 2.5,
+                    force_pull = 0,
+                    direction = "y",
+                    point.padding = NA,
+                    min.segment.length = 14,
+                    vjust = 0.5,
+                    position = position_dodge2(width = 0.4),
+                    seed = 455) +
+  scale_color_colorblind(name = NULL) +
+#  facet_grid(~ ed, switch = "y") +
+  coord_flip() +
+  theme_bw() +
+  theme(legend.position = "none",
+         strip.text = element_markdown(size = 10, 
+                                      face = "bold"),
+        axis.title = element_markdown(size = 12),
+        axis.text = element_markdown(size = 11)) -> fig11
+
+#ggsave("figures/fig_11.png", dpi = 300, width = 9)
+```
+
+
+
+
+
+```{r warning = FALSE}
+#fig2 + 
+fig1 + fig11 +
+  plot_annotation(tag_levels = 'A') & 
+  theme(plot.tag = element_text(size = 12, hjust = 0, vjust = 0))
+
+ggsave("figures/scotts_corn.png", width = 8)
+```
+
+
+
+
+
+
+
+
+## Fallow
+
+
+
+```{r message = FALSE, warning = FALSE}
+fallow_scott <- scottsbluff |> 
+  filter(type == "fallow")
+
+model2 <- drm(emergence ~ GDD, population, 
+              fct = W1.3(fixed = c(NA, 100, NA), 
+                         names = c("slope", "upper", "ed50")),
+              data = fallow_scott)
+```
+
+```{r}
+plot(model2)
+```
+
+
+```{r}
+broom::tidy(model2) %>% 
+  mutate_if(is.double, ~ round(., 2)) %>% 
+  reactable()
+```
+
+```{r}
+ED(model2, c(10, 50, 90), type = "absolute", interval = "delta") %>% 
+  as.data.frame() %>% 
+  rownames_to_column(., var = "name") %>% 
+  as_tibble() %>% 
+  separate(name, c("param", "trt", "ED"), sep = ":") %>% 
+  janitor::clean_names() %>% 
+#  mutate(location = str_to_title(location)) %>% 
+  mutate_if(is_character, as_factor) -> ed2
+```
+
+
+```{r}
+EDcomp(model2, c(90,90), type = "absolute", 
+       interval = "delta", level = 0.95)
+```
+
+
+
+
+
+ 
+ 
+ 
+```{r warning = FALSE}
+ed2 %>% 
+  mutate(ed = case_when(
+  ed == "10" ~ "10% emergence",
+  ed == "50" ~ "50% emergence",
+  ed == "90" ~ "90% emergence",
+  TRUE ~ "ed")) -> ed3
+```
+
+
+```{r}
+ed3 %>% 
+  mutate(crop = "Fallow") |> 
+ggplot(aes(x = trt, y = estimate, color = trt, shape = ed)) +
+  geom_point(position = position_dodge2(width = 0.4), size = 1.5) +
+  geom_linerange(aes(ymin = lower, ymax = upper), size = 1.03,
+                 position = position_dodge2(width = 0.4)) +
+  labs(x = NULL, y = "Growing degree days", shape = NULL) +
+  scale_y_continuous(limits = c(0, 220)) +
+  coord_flip() +
+  facet_grid(~ crop) +
+  scale_color_colorblind(name = NULL) +
+  scale_shape_manual(values = c(8,9,10)) +
+  geom_text_repel(data = ed3, mapping = aes(label = round(estimate,0), 
+                         x = trt, color = trt),
+                    size = 2.5,
+                    force_pull = 0,
+                    direction = "y",
+                    point.padding = NA,
+                    min.segment.length = 14,
+                    vjust = 0.5,
+                    position = position_dodge2(width = 0.4),
+                    seed = 455) +
+  geom_curve(x = 0.8, y = 47, xend = 0.7, yend = 55,
+             arrow = arrow(length = unit(0.07, "inch")), 
+             size = 0.4, curvature = 0.3, color = 2) + 
+  annotate("text", x = 0.7, y = 60, label = "10% emergence", 
+           hjust = 0, size = 2.3, fontface = "italic") +
+  geom_curve(x = 1.94, y = 68, xend = 1.84, yend = 79,
+             arrow = arrow(length = unit(0.07, "inch")), 
+             size = 0.4, curvature = 0.3, color = 2) +
+  annotate("text", x = 1.84, y = 84, label = "50% emergence", 
+           hjust = 0, size = 2.3, fontface = "italic") +
+  geom_curve(x = 3.09, y = 182, xend = 2.99, yend = 193,
+             arrow = arrow(length = unit(0.07, "inch")), 
+             size = 0.4, curvature = 0.3, color = 2) + 
+  annotate("text", x = 2.99, y = 195, label = "90% \nemergence", 
+           hjust = 0, size = 2.3, fontface = "italic", lineheight = 0.7) +
+  theme_bw() +
+  theme(legend.position = "none",
+        strip.text = element_markdown(size = 10, 
+                                      face = "bold"),
+        axis.title = element_markdown(size = 12),
+        axis.text = element_markdown(size = 11)) +
+  guides(color = "none") -> fig2
+fig2
+```
+
+
+
+
+
+
+
+
+```{r}
+library(glmmTMB)
+library(emmeans)
+library(multcomp)
+```
+
+
+```{r}
+readxl::read_excel("anova.xlsx", sheet = "SB") %>% 
+  mutate_if(is_character, as_factor) %>% 
+  rename(rep = R,
+         pop = P,
+         treat = `T`) %>% 
+  mutate(trt = case_when(
+    pop == "L" & treat == "dry" ~ "Lin in fallow",
+    pop == "NP" & treat == "dry" ~ "Npl in fallow",
+    pop == "SB" & treat == "dry" ~ "Scb in fallow",
+    pop == "L" & treat == "ir" ~ "Lin in corn",
+    pop == "NP" & treat == "ir" ~ "Npl in corn",
+    pop == "SB" & treat == "ir" ~ "Scb in corn",
+    TRUE ~ NA_character_
+  )) |> 
+  separate("trt", c("population", "crop"), sep = " in ") %>% 
+  mutate(rep = as_factor(rep)) -> sb_data
+```
+
+
+```{r}
+crn_sct_f <- sb_data |> 
+  filter(crop == "fallow")
+
+mod_2 = glmmTMB(dansity ~ population + (1|rep),
+                family = poisson(), data = crn_sct_f)
+```
+
+```{r}
+glmmTMB:::Anova.glmmTMB(mod_2)
+```
+
+```{r}
+emmeans(mod_2, ~ population, type = "response") -> em_2
+```
+
+
+```{r}
+cld(em_2, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE) %>% 
+  as_tibble() -> cld_2
+```
+
+
+```{r}
+cld_2 %>% 
+  mutate(crop = "Fallow") |> 
+  ggplot(aes(x = fct_reorder(population, rate), y = rate, color = population)) +
+  geom_linerange(aes(ymin = lower.CL, ymax = upper.CL), size = 1.03) +
+  geom_point(size = 1.5) +
+  labs(x = NULL, y = expression(paste("Horseweed density (plants plot"^"-1",")"))) +
+  scale_y_continuous(limits = c(0, 1100), breaks = seq(0, 1100, 200)) +
+  facet_grid(~ crop) +
+  geom_text_repel(aes(label = round(rate,0), 
+                         x = population, color = population),
+                    size = 2.5,
+                    force_pull = 0,
+                    direction = "y",
+                    point.padding = NA,
+                    min.segment.length = 14,
+                    vjust = 0.5,
+                    position = position_dodge2(width = 0.4),
+                    seed = 455) +
+  scale_color_colorblind(name = NULL) +
+#  facet_grid(~ ed, switch = "y") +
+  coord_flip() +
+  theme_bw() +
+  theme(legend.position = "none",
+         strip.text = element_markdown(size = 10, 
+                                      face = "bold"),
+        axis.title = element_markdown(size = 12),
+        axis.text = element_markdown(size = 11)) -> fig22
+
+#ggsave("figures/fig_11.png", dpi = 300, width = 9)
+```
+
+
+
+
+
+```{r warning = FALSE}
+#fig2 + 
+fig2 + fig22 +
+  plot_annotation(tag_levels = 'A') & 
+  theme(plot.tag = element_text(size = 12, hjust = 0, vjust = 0))
+
+ggsave("figures/scotts_fallow.png", width = 8)
+```
+
+
+
+
+
+
