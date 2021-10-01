@@ -338,6 +338,11 @@ north_platte1 %>%
 ```
 
 
+
+
+
+
+
 ```{r warning = FALSE}
 fig9 + fig7 + fig8 +
   plot_annotation(tag_levels = 'A') & 

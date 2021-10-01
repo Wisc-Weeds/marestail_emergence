@@ -9,7 +9,6 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-
 ```{r}
 library(tidyverse)
 library(drc)
@@ -19,7 +18,6 @@ library(ggtext)
 library(patchwork)
 library(ggrepel)
 ```
-
 
 # Scottsbluff
 
@@ -41,8 +39,6 @@ readxl::read_excel("data/Emergence.xlsx", sheet = "SCOTTSBLUFF") %>%
   filter(!is.na(GDD)) -> sctbf1
 ```
 
-
-
 ```{r}
 readxl::read_excel("data/Emergence.xlsx", sheet = "SCOTTSBLUFF") %>% 
   janitor::row_to_names(row_number = 1) %>% 
@@ -60,7 +56,6 @@ readxl::read_excel("data/Emergence.xlsx", sheet = "SCOTTSBLUFF") %>%
   mutate(location = "Scottsbluff") -> sctbf2
 ```
 
-
 ```{r}
 sctbf1 %>% 
   bind_rows(sctbf2) %>% 
@@ -70,6 +65,8 @@ sctbf1 %>%
   unite("trt", c("population", "type"), sep = " in ", remove = FALSE) %>% 
   drop_na() -> scottsbluff
 ```
+
+## Corn
 
 
 ```{r message = FALSE, warning = FALSE}
@@ -85,7 +82,6 @@ model1 <- drm(emergence ~ GDD, population,
 ```{r}
 plot(model1)
 ```
-
 
 ```{r}
 broom::tidy(model1) %>% 
@@ -104,15 +100,10 @@ ED(model1, c(10, 50, 90), type = "absolute", interval = "delta") %>%
   mutate_if(is_character, as_factor) -> ed1
 ```
 
-
 ```{r}
 EDcomp(model1, c(90,90), type = "absolute", 
        interval = "delta", level = 0.95)
 ```
-
-
-
-
 
 ```{r}
 readxl::read_excel("data/dates.xlsx", sheet = "Scottsbluff") %>% 
@@ -120,80 +111,23 @@ readxl::read_excel("data/dates.xlsx", sheet = "Scottsbluff") %>%
   mutate(month = lubridate::month(date),
          doy = lubridate::yday(date)) -> date_sct
 ```
- 
- 
- 
+
+
 ```{r warning = FALSE}
 ed1 %>% 
   mutate(ed = case_when(
-  ed == "10" ~ "10% emergence",
-  ed == "50" ~ "50% emergence",
-  ed == "90" ~ "90% emergence",
-  TRUE ~ "ed")) -> ed2
+  ed == "10" ~ "10%",
+  ed == "50" ~ "50%",
+  ed == "90" ~ "90%",
+  TRUE ~ "ed")) |> 
+  mutate(crop = "Corn") -> ed2
 ```
-
-
-```{r}
-ed2 %>% 
-  mutate(crop = "Corn") |> 
-ggplot(aes(x = trt, y = estimate, color = trt, shape = ed)) +
-  geom_point(position = position_dodge2(width = 0.4), size = 1.5) +
-  geom_linerange(aes(ymin = lower, ymax = upper), size = 1.03,
-                 position = position_dodge2(width = 0.4)) +
-  labs(x = NULL, y = "Growing degree days", shape = NULL) +
-  scale_y_continuous(limits = c(0, 220)) +
-  coord_flip() +
-  facet_grid(~ crop) +
-  scale_color_colorblind(name = NULL) +
-  scale_shape_manual(values = c(8,9,10)) +
-  geom_text_repel(data = ed2, mapping = aes(label = round(estimate,0), 
-                         x = trt, color = trt),
-                    size = 2.5,
-                    force_pull = 0,
-                    direction = "y",
-                    point.padding = NA,
-                    min.segment.length = 14,
-                    vjust = 0.5,
-                    position = position_dodge2(width = 0.4),
-                    seed = 455) +
-  geom_curve(x = 0.8, y = 84, xend = 0.7, yend = 95,
-             arrow = arrow(length = unit(0.07, "inch")), 
-             size = 0.4, curvature = 0.3, color = 2) + 
-  annotate("text", x = 0.7, y = 100, label = "10% emergence", 
-           hjust = 0, size = 2.3, fontface = "italic") +
-  geom_curve(x = 1.94, y = 94, xend = 1.84, yend = 105,
-             arrow = arrow(length = unit(0.07, "inch")), 
-             size = 0.4, curvature = 0.3, color = 2) +
-  annotate("text", x = 1.84, y = 110, label = "50% emergence", 
-           hjust = 0, size = 2.3, fontface = "italic") +
-  geom_curve(x = 3.09, y = 160, xend = 2.99, yend = 171,
-             arrow = arrow(length = unit(0.07, "inch")), 
-             size = 0.4, curvature = 0.3, color = 2) + 
-  annotate("text", x = 2.99, y = 176, label = "90% emergence", 
-           hjust = 0, size = 2.3, fontface = "italic") +
-  theme_bw() +
-  theme(legend.position = "none",
-        strip.text = element_markdown(size = 10, 
-                                      face = "bold"),
-        axis.title = element_markdown(size = 12),
-        axis.text = element_markdown(size = 11)) +
-  guides(color = "none") -> fig1
-fig1
-```
-
-
-
-
-
-
-
 
 ```{r}
 library(glmmTMB)
 library(emmeans)
 library(multcomp)
 ```
-
 
 ```{r}
 readxl::read_excel("anova.xlsx", sheet = "SB") %>% 
@@ -213,7 +147,6 @@ readxl::read_excel("anova.xlsx", sheet = "SB") %>%
   separate("trt", c("population", "crop"), sep = " in ") %>% 
   mutate(rep = as_factor(rep)) -> sb_data
 ```
-
 
 ```{r}
 crn_sct_a <- sb_data |> 
@@ -231,68 +164,13 @@ glmmTMB:::Anova.glmmTMB(mod_1)
 emmeans(mod_1, ~ population, type = "response") -> em_1
 ```
 
-
 ```{r}
 cld(em_1, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE) %>% 
-  as_tibble() -> cld_1
+  as_tibble() |> 
+  mutate(crop = "Corn") -> cld_1
 ```
-
-
-```{r}
-cld_1 %>% 
-  mutate(crop = "Corn") |> 
-  ggplot(aes(x = fct_reorder(population, rate), y = rate, color = population)) +
-  geom_linerange(aes(ymin = lower.CL, ymax = upper.CL), size = 1.03) +
-  geom_point(size = 1.5) +
-  labs(x = NULL, y = expression(paste("Horseweed density (plants plot"^"-1",")"))) +
-  scale_y_continuous(limits = c(0, 1100), breaks = seq(0, 1100, 200)) +
-  facet_grid(~ crop) +
-  geom_text_repel(aes(label = round(rate,0), 
-                         x = population, color = population),
-                    size = 2.5,
-                    force_pull = 0,
-                    direction = "y",
-                    point.padding = NA,
-                    min.segment.length = 14,
-                    vjust = 0.5,
-                    position = position_dodge2(width = 0.4),
-                    seed = 455) +
-  scale_color_colorblind(name = NULL) +
-#  facet_grid(~ ed, switch = "y") +
-  coord_flip() +
-  theme_bw() +
-  theme(legend.position = "none",
-         strip.text = element_markdown(size = 10, 
-                                      face = "bold"),
-        axis.title = element_markdown(size = 12),
-        axis.text = element_markdown(size = 11)) -> fig11
-
-#ggsave("figures/fig_11.png", dpi = 300, width = 9)
-```
-
-
-
-
-
-```{r warning = FALSE}
-#fig2 + 
-fig1 + fig11 +
-  plot_annotation(tag_levels = 'A') & 
-  theme(plot.tag = element_text(size = 12, hjust = 0, vjust = 0))
-
-ggsave("figures/scotts_corn.png", width = 8)
-```
-
-
-
-
-
-
-
 
 ## Fallow
-
-
 
 ```{r message = FALSE, warning = FALSE}
 fallow_scott <- scottsbluff |> 
@@ -308,7 +186,6 @@ model2 <- drm(emergence ~ GDD, population,
 plot(model2)
 ```
 
-
 ```{r}
 broom::tidy(model2) %>% 
   mutate_if(is.double, ~ round(., 2)) %>% 
@@ -323,85 +200,210 @@ ED(model2, c(10, 50, 90), type = "absolute", interval = "delta") %>%
   separate(name, c("param", "trt", "ED"), sep = ":") %>% 
   janitor::clean_names() %>% 
 #  mutate(location = str_to_title(location)) %>% 
-  mutate_if(is_character, as_factor) -> ed2
+  mutate_if(is_character, as_factor) -> ed3
 ```
-
 
 ```{r}
 EDcomp(model2, c(90,90), type = "absolute", 
        interval = "delta", level = 0.95)
 ```
 
-
-
-
-
- 
- 
- 
 ```{r warning = FALSE}
-ed2 %>% 
+ed3 %>% 
   mutate(ed = case_when(
-  ed == "10" ~ "10% emergence",
-  ed == "50" ~ "50% emergence",
-  ed == "90" ~ "90% emergence",
-  TRUE ~ "ed")) -> ed3
+  ed == "10" ~ "10%",
+  ed == "50" ~ "50%",
+  ed == "90" ~ "90%",
+  TRUE ~ NA_character_)) |> 
+  mutate(crop = "Fallow") -> ed4
+```
+
+```{r}
+cnr <- tibble(crop = 'Corn')
+```
+
+```{r}
+scales::show_col(colorblind_pal()(3))
 ```
 
 
 ```{r}
-ed3 %>% 
-  mutate(crop = "Fallow") |> 
-ggplot(aes(x = trt, y = estimate, color = trt, shape = ed)) +
-  geom_point(position = position_dodge2(width = 0.4), size = 1.5) +
+ed2 |> 
+  bind_rows(ed4) -> eds 
+
+eds  |>  
+ggplot(aes(x = ed, y = estimate, color = trt, shape = trt)) +
+  geom_point(position = position_dodge2(width = 0.7), size = 2) +
   geom_linerange(aes(ymin = lower, ymax = upper), size = 1.03,
-                 position = position_dodge2(width = 0.4)) +
-  labs(x = NULL, y = "Growing degree days", shape = NULL) +
+                 position = position_dodge2(width = 0.7)) +
+  labs(x = "Cumulative emergence (%)", 
+       y = "Growing Degree Days", shape = NULL) +
   scale_y_continuous(limits = c(0, 220)) +
   coord_flip() +
-  facet_grid(~ crop) +
+  facet_grid(crop ~ .) +
   scale_color_colorblind(name = NULL) +
   scale_shape_manual(values = c(8,9,10)) +
-  geom_text_repel(data = ed3, mapping = aes(label = round(estimate,0), 
-                         x = trt, color = trt),
-                    size = 2.5,
+  geom_text_repel(data = eds, mapping = aes(label = round(estimate,0), 
+                         x = ed, color = trt),
+                    size = 3,
                     force_pull = 0,
                     direction = "y",
                     point.padding = NA,
                     min.segment.length = 14,
                     vjust = 0.5,
-                    position = position_dodge2(width = 0.4),
-                    seed = 455) +
-  geom_curve(x = 0.8, y = 47, xend = 0.7, yend = 55,
+                    position = position_dodge2(width = 0.7),
+                    seed = 312) +
+  geom_curve(data = cnr, mapping = aes(x = 0.7, y = 84, xend = 0.6, yend = 95),
              arrow = arrow(length = unit(0.07, "inch")), 
-             size = 0.4, curvature = 0.3, color = 2) + 
-  annotate("text", x = 0.7, y = 60, label = "10% emergence", 
-           hjust = 0, size = 2.3, fontface = "italic") +
-  geom_curve(x = 1.94, y = 68, xend = 1.84, yend = 79,
+             size = 0.4, curvature = 0.3, color = "#000000", inherit.aes = FALSE) + 
+  geom_text(data = cnr, mapping = aes(x = 0.6, y = 100), label = "Lin", 
+           hjust = 0, size = 3.5, fontface = "bold", inherit.aes = FALSE,
+           color = "#000000") +
+  geom_curve(data = cnr, mapping = aes(x = 2, y = 85, xend = 1.84, yend = 77),
              arrow = arrow(length = unit(0.07, "inch")), 
-             size = 0.4, curvature = 0.3, color = 2) +
-  annotate("text", x = 1.84, y = 84, label = "50% emergence", 
-           hjust = 0, size = 2.3, fontface = "italic") +
-  geom_curve(x = 3.09, y = 182, xend = 2.99, yend = 193,
+             size = 0.4, curvature = 0.3, color = "#E69F00", inherit.aes = FALSE) +
+  geom_text(data = cnr, mapping = aes(x = 1.76, y = 70), label = "Npl", 
+           hjust = 0, size = 3.5, fontface = "bold", inherit.aes = FALSE,
+           color = "#E69F00") +
+  geom_curve(data = cnr, mapping = aes(x = 3.3, y = 160, xend = 3.4, yend = 171),
              arrow = arrow(length = unit(0.07, "inch")), 
-             size = 0.4, curvature = 0.3, color = 2) + 
-  annotate("text", x = 2.99, y = 195, label = "90% \nemergence", 
-           hjust = 0, size = 2.3, fontface = "italic", lineheight = 0.7) +
+             size = 0.4, curvature = -0.3, color = "#56B4E9", inherit.aes = FALSE) + 
+  geom_text(data = cnr, mapping = aes(x = 3.4, y = 176), label = "Scb", 
+           hjust = 0, size = 3.5, fontface = "bold", color = "#56B4E9", inherit.aes = FALSE) +
+  geom_text(data = cnr, mapping = aes(x = 3.4, y = 0), label = "Scottsbluff", 
+           hjust = 0, size = 4, fontface = "italic", inherit.aes = FALSE) +
   theme_bw() +
   theme(legend.position = "none",
-        strip.text = element_markdown(size = 10, 
+        strip.text = element_markdown(size = 11, 
                                       face = "bold"),
-        axis.title = element_markdown(size = 12),
-        axis.text = element_markdown(size = 11)) +
-  guides(color = "none") -> fig2
-fig2
+        axis.title = element_markdown(size = 11),
+        axis.text = element_markdown(size = 10)) +
+  guides(color = "none") -> fig1
+
+ggsave("figures/fig_1.png", dpi = 300, width = 4, height = 7)
 ```
 
 
 
 
+## Curve Corn
 
 
+```{r Control prediction, include=FALSE}
+newdata <- expand.grid(GDD=exp(seq(log(0.5), log(760), length=760)))
+newdata1 <- data.frame(population = c("Lin"), newdata)
+newdata2 <- data.frame(population = c("Npl"), newdata)
+newdata3 <- data.frame(population = c("Scb"), newdata)
+
+nd <- rbind(newdata1, newdata2, newdata3)
+
+pm <- predict(model1, newdata=nd, interval="confidence")
+
+nd$p <- pm[,1] 
+nd$pmin <- pm[,2] 
+nd$pmax <- pm[,3] 
+
+crn_scott$GDD0 <- crn_scott$GDD
+crn_scott$GDD0[crn_scott$GDD0==0] <- 0.5
+```
+
+
+## Curve Fallow
+
+
+```{r Control prediction, include=FALSE}
+newdata <- expand.grid(GDD=exp(seq(log(0.5), log(760), length=760)))
+newdata4 <- data.frame(population =c("Lin"), newdata)
+newdata5 <- data.frame(population =c("Npl"), newdata)
+newdata6 <- data.frame(population =c("Scb"), newdata)
+
+nd1 <- rbind(newdata4, newdata5, newdata6)
+
+pm1 <- predict(model2, newdata=nd1, interval="confidence")
+
+nd1$p <- pm1[,1] 
+nd1$pmin <- pm1[,2] 
+nd1$pmax <- pm1[,3] 
+
+fallow_scott$GDD0 <- fallow_scott$GDD
+fallow_scott$GDD0[fallow_scott$GDD0==0] <- 0.5
+```
+
+```{r Control Plot, message=FALSE, warning=FALSE}
+crn_scott |> 
+  bind_rows(fallow_scott) |> 
+  mutate(population = fct_recode(population,
+    "<b style='color:#000000;'>Lin</b>" = "Lin",
+    "<b style='color:#E69F00;'>Npl</b>" = "Npl",
+    "<b style='color:#56B4E9;'>Scb</b>" = "Scb"
+  )) -> full_dt
+
+nd |> 
+  mutate(crop = "Corn") -> nd
+
+nd1 |> 
+  mutate(crop = "Fallow") -> nd1
+
+nd |> 
+  bind_rows(nd1) |> 
+  mutate(population = fct_recode(population,
+    "<b style='color:#000000;'>Lin</b>" = "Lin",
+    "<b style='color:#E69F00;'>Npl</b>" = "Npl",
+    "<b style='color:#56B4E9;'>Scb</b>" = "Scb"
+  )) -> nd2
+```
+
+
+```{r message=FALSE, warning=FALSE}
+full_dt %>% 
+ggplot(aes(x = GDD, y = emergence, color = population)) + 
+  geom_line(data = nd2, aes(x = GDD, y = p, color = population), size = 1) +
+  labs(y="Cumulative emergence (%)", x = "Growing degree days") +
+  coord_trans(x= "log") +
+#  geom_point(alpha = 0.1) +
+  geom_jitter(data = full_dt, 
+              aes(x = GDD, y = emergence, color = population),
+              alpha = 0.1) +
+  facet_grid(crop ~ .) +
+  scale_x_continuous(limits = c(1, 1000), breaks = c(1, 10, 100, 1000)) + 
+  scale_color_colorblind(name = NULL, 
+                         guide = guide_legend(reverse = TRUE)) +
+  geom_segment(aes(x = 30, y = 10,
+                   xend = 120, yend = 10), 
+               arrow = arrow(length = unit(0.03, "npc")), 
+               size = 0.8,
+               color = 2) +
+  annotate("text", x = 200, y = 10, label = "10%", 
+           fontface = 'italic',
+           size = 3) +
+  geom_segment(aes(x = 50, y = 50, 
+                   xend = 155, yend = 50), 
+               arrow = arrow(length = unit(0.03, "npc")),
+               size = 0.8,
+               color = 2) +
+  annotate("text", x = 280, y = 50, label = "50%", 
+           fontface = 'italic',
+           size = 3) +
+  geom_segment(aes(x = 100, y = 90, 
+                   xend = 255, yend = 90), 
+               arrow = arrow(length = unit(0.03, "npc")),
+               size = 0.8,
+               color = 2) +
+  annotate("text", x = 415, y = 90, label = "90%", 
+           fontface = 'italic', color = "#333333",
+           size = 3) +
+  theme_bw() +
+  theme(axis.title = element_markdown(size = 12),
+        axis.text = element_markdown(size = 11),
+        legend.position = c(0.1, 0.95),
+        legend.background = element_rect(colour = NA, fill = NA),
+        legend.key = element_rect(colour = NA, fill = NA),
+        legend.text = element_markdown(size = 8, face = "bold"),
+        legend.key.size = unit(0.5, "cm"),
+        strip.text = element_markdown(size = 11, face = "bold")) -> fig3
+
+ggsave("figures/fig_2.png", dpi = 300, width = 4, height = 7)
+```
 
 
 ```{r}
@@ -409,7 +411,6 @@ library(glmmTMB)
 library(emmeans)
 library(multcomp)
 ```
-
 
 ```{r}
 readxl::read_excel("anova.xlsx", sheet = "SB") %>% 
@@ -430,7 +431,6 @@ readxl::read_excel("anova.xlsx", sheet = "SB") %>%
   mutate(rep = as_factor(rep)) -> sb_data
 ```
 
-
 ```{r}
 crn_sct_f <- sb_data |> 
   filter(crop == "fallow")
@@ -447,25 +447,27 @@ glmmTMB:::Anova.glmmTMB(mod_2)
 emmeans(mod_2, ~ population, type = "response") -> em_2
 ```
 
-
 ```{r}
 cld(em_2, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE) %>% 
-  as_tibble() -> cld_2
+  as_tibble() |> 
+  mutate(crop = "Fallow") -> cld_2
 ```
 
-
 ```{r}
-cld_2 %>% 
-  mutate(crop = "Fallow") |> 
+cld_1 %>%
+  bind_rows(cld_2) |> 
   ggplot(aes(x = fct_reorder(population, rate), y = rate, color = population)) +
   geom_linerange(aes(ymin = lower.CL, ymax = upper.CL), size = 1.03) +
-  geom_point(size = 1.5) +
-  labs(x = NULL, y = expression(paste("Horseweed density (plants plot"^"-1",")"))) +
-  scale_y_continuous(limits = c(0, 1100), breaks = seq(0, 1100, 200)) +
-  facet_grid(~ crop) +
+  geom_point(size = 2) +
+  labs(x = NULL, 
+       y = expression(paste("Horseweed density (plants experimental unit"^"-1",")"))) +
+  scale_y_continuous(limits = c(0, 1150), 
+                     breaks = seq(0, 1150, 200)) +
+  facet_grid(crop ~ .) +
   geom_text_repel(aes(label = round(rate,0), 
-                         x = population, color = population),
-                    size = 2.5,
+                         x = population, 
+                      color = population),
+                    size = 4,
                     force_pull = 0,
                     direction = "y",
                     point.padding = NA,
@@ -473,34 +475,37 @@ cld_2 %>%
                     vjust = 0.5,
                     position = position_dodge2(width = 0.4),
                     seed = 455) +
+  geom_text(aes(x = population, y = upper.CL + 35, label = .group),
+            inherit.aes = FALSE) +
   scale_color_colorblind(name = NULL) +
 #  facet_grid(~ ed, switch = "y") +
   coord_flip() +
   theme_bw() +
   theme(legend.position = "none",
-         strip.text = element_markdown(size = 10, 
+         strip.text = element_markdown(size = 11, 
                                       face = "bold"),
         axis.title = element_markdown(size = 12),
-        axis.text = element_markdown(size = 11)) -> fig22
+        axis.text = element_markdown(size = 11)) -> fig2
 
-#ggsave("figures/fig_11.png", dpi = 300, width = 9)
+#ggsave("figures/fig_2.png", dpi = 300, width = 4, height = 7)
 ```
+Só não entendi a piada da Unoeste. 
 
+Alguém me explica?  
+
+Só não entendi a piada da Unoeste. 
+
+Alguém me explica?  
 
 
 
 
 ```{r warning = FALSE}
-#fig2 + 
-fig2 + fig22 +
+fig3 + fig1 + fig2 +
   plot_annotation(tag_levels = 'A') & 
-  theme(plot.tag = element_text(size = 12, hjust = 0, vjust = 0))
+  theme(plot.tag = element_text(size = 15, hjust = 0, vjust = 0),
+        panel.background = element_rect(fill = "white"),
+        plot.background = element_rect(fill = "#FFFAF0"))
 
-ggsave("figures/scotts_fallow.png", width = 8)
+ggsave("figures/scotts.png", width = 13, height = 7)
 ```
-
-
-
-
-
-
