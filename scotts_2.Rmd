@@ -274,10 +274,11 @@ ggplot(aes(x = ed, y = estimate, color = trt, shape = trt)) +
            hjust = 0, size = 4, fontface = "italic", inherit.aes = FALSE) +
   theme_bw() +
   theme(legend.position = "none",
-        strip.text = element_markdown(size = 11, 
+        strip.text = element_markdown(size = 12, 
                                       face = "bold"),
-        axis.title = element_markdown(size = 11),
-        axis.text = element_markdown(size = 10)) +
+        panel.grid = element_blank(),
+        axis.title = element_markdown(size = 12),
+        axis.text = element_markdown(size = 11)) +
   guides(color = "none") -> fig1
 
 ggsave("figures/fig_1.png", dpi = 300, width = 4, height = 7)
@@ -398,9 +399,10 @@ ggplot(aes(x = GDD, y = emergence, color = population)) +
         legend.position = c(0.1, 0.95),
         legend.background = element_rect(colour = NA, fill = NA),
         legend.key = element_rect(colour = NA, fill = NA),
+        panel.grid = element_blank(),
         legend.text = element_markdown(size = 8, face = "bold"),
         legend.key.size = unit(0.5, "cm"),
-        strip.text = element_markdown(size = 11, face = "bold")) -> fig3
+        strip.text = element_markdown(size = 12, face = "bold")) -> fig3
 
 ggsave("figures/fig_2.png", dpi = 300, width = 4, height = 7)
 ```
@@ -482,20 +484,14 @@ cld_1 %>%
   coord_flip() +
   theme_bw() +
   theme(legend.position = "none",
-         strip.text = element_markdown(size = 11, 
+         strip.text = element_markdown(size = 12, 
                                       face = "bold"),
         axis.title = element_markdown(size = 12),
+        panel.grid = element_blank(),
         axis.text = element_markdown(size = 11)) -> fig2
 
 #ggsave("figures/fig_2.png", dpi = 300, width = 4, height = 7)
 ```
-Só não entendi a piada da Unoeste. 
-
-Alguém me explica?  
-
-Só não entendi a piada da Unoeste. 
-
-Alguém me explica?  
 
 
 
@@ -504,8 +500,8 @@ Alguém me explica?
 fig3 + fig1 + fig2 +
   plot_annotation(tag_levels = 'A') & 
   theme(plot.tag = element_text(size = 15, hjust = 0, vjust = 0),
-        panel.background = element_rect(fill = "white"),
-        plot.background = element_rect(fill = "#FFFAF0"))
+        panel.background = element_rect(fill = "#F5F5F5"),
+        plot.background = element_rect(fill = "#F5F5F5"))
 
 ggsave("figures/scotts.png", width = 13, height = 7)
 ```
