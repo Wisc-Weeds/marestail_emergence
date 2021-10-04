@@ -14,6 +14,7 @@ library(tidyverse)
 library(drc)
 library(reactable)
 library(ggthemes)
+library(lmerTest)
 library(ggtext)
 library(patchwork)
 library(ggrepel)
@@ -458,6 +459,10 @@ cld(em_2, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE) %>%
 ```
 
 ```{r}
+crn <- tibble(crop = 'Corn')
+```
+
+```{r}
 cld_1 %>%
   bind_rows(cld_2) |> 
   mutate(population = fct_recode(population,
@@ -465,7 +470,8 @@ cld_1 %>%
     "<b style='color:#E69F00;'>Npl</b>" = "Npl",
     "<b style='color:#56B4E9;'>Scb</b>" = "Scb"
   )) |> 
-  ggplot(aes(x = fct_reorder(population, rate), y = rate, color = population)) +
+  mutate(time = "Fall") |> 
+  ggplot(aes(x = fct_reorder(population, rate), y = rate, color = time)) +
   geom_linerange(aes(ymin = lower.CL, ymax = upper.CL), size = 1.03) +
   geom_point(size = 2) +
   labs(x = NULL, 
@@ -474,9 +480,8 @@ cld_1 %>%
                      breaks = seq(0, 1150, 200)) +
   facet_grid(crop ~ .) +
   geom_text_repel(aes(label = round(rate,0), 
-                         x = population, 
-                      color = population),
-                    size = 4,
+                         x = population),
+                    size = 3,
                     force_pull = 0,
                     direction = "y",
                     point.padding = NA,
@@ -484,10 +489,15 @@ cld_1 %>%
                     vjust = 0.5,
                     position = position_dodge2(width = 0.4),
                     seed = 455) +
-  geom_text(aes(x = population, y = upper.CL + 35, label = .group, color = population),
+  geom_text(aes(x = population, y = upper.CL + 35, label = .group, color = time),
             inherit.aes = FALSE) +
-  scale_color_colorblind(name = NULL) +
-#  facet_grid(~ ed, switch = "y") +
+  scale_color_manual(values = "#004586") +
+  geom_curve(data = crn, mapping = aes(x = 2.05, y = 48, xend = 2.2, yend = 200),
+             arrow = arrow(length = unit(0.07, "inch")), 
+             size = 0.4, curvature = -0.3, color = "#004586", inherit.aes = FALSE) +
+  geom_text(data = crn, mapping = aes(x = 2.2, y = 220), label = "Fall", 
+           hjust = 0, size = 3.5, fontface = "italic", color = "#004586",
+           inherit.aes = FALSE) +
   coord_flip() +
   theme_bw() +
   theme(legend.position = "none",
@@ -497,7 +507,7 @@ cld_1 %>%
         panel.grid = element_blank(),
         axis.text.y = element_markdown(size = 11)) -> fig2
 
-#ggsave("figures/fig_2.png", dpi = 300, width = 4, height = 7)
+ggsave("figures/fig_2.png", dpi = 300, width = 4, height = 7)
 ```
 
 
