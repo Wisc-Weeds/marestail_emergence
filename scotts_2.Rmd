@@ -102,8 +102,8 @@ ED(model1, c(10, 50, 90), type = "absolute", interval = "delta") %>%
 ```
 
 ```{r}
-EDcomp(model1, c(90,90), type = "absolute", 
-       interval = "delta", level = 0.95)
+EDcomp(model1, c(10, 10, 50, 50, 90,90), type = "absolute", 
+        level = 0.95)
 ```
 
 ```{r}
@@ -205,8 +205,8 @@ ED(model2, c(10, 50, 90), type = "absolute", interval = "delta") %>%
 ```
 
 ```{r}
-EDcomp(model2, c(90,90), type = "absolute", 
-       interval = "delta", level = 0.95)
+EDcomp(model2, c(10,10, 50,50, 90,90), type = "absolute", 
+       level = 0.95)
 ```
 
 ```{r warning = FALSE}

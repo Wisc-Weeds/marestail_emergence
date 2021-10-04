@@ -302,14 +302,7 @@ lincoln$GDD0 <- lincoln$GDD
 lincoln$GDD0[lincoln$GDD0==0] <- 0.5
 ```
 
-    pop == "CK" & crop == "corn" ~ "Natural in corn",
-    pop == "CK" & crop == "soy" ~ "Natural in soybean",
-    pop == "L" & crop == "corn" ~ "Lin in corn",
-    pop == "L" & crop == "soy" ~ "Lin in soybean",
-    pop == "NP" & crop == "corn" ~ "Npl in corn",
-    pop == "NP" & crop == "soy" ~ "Npl in soybean",
-    pop == "SB" & crop == "corn" ~ "Scb in corn",
-    pop == "SB" & crop == "soy" ~ "Scb in soybean",
+
 
 ```{r Control Plot, message=FALSE, warning=FALSE}
 lincoln %>% 

@@ -92,8 +92,8 @@ ED(model3, c(10, 50, 90), type = "absolute", interval = "delta") %>%
 ```
 
 ```{r}
-EDcomp(model3, c(90,90), type = "absolute", 
-       interval = "delta", level = 0.95)
+EDcomp(model3, c(10,10, 50, 50, 90,90), type = "absolute", 
+       ilevel = 0.95)
 ```
 
 ```{r warning = FALSE}
@@ -137,8 +137,8 @@ ED(model4, c(10, 50, 90), type = "absolute", interval = "delta") %>%
 ```
 
 ```{r}
-EDcomp(model4, c(90,90), type = "absolute", 
-       interval = "delta", level = 0.95)
+EDcomp(model4, c(10,10, 50,50, 90,90), type = "absolute", 
+       level = 0.95)
 ```
 
 ```{r warning = FALSE}
@@ -349,13 +349,13 @@ nd |>
 ```{r message=FALSE, warning=FALSE}
 full_dt1 %>% 
 ggplot(aes(x = GDD, y = emergence, color = population)) + 
+  geom_jitter(data = full_dt1, 
+              aes(x = GDD, y = emergence, color = population),
+              alpha = 0.1) +
   geom_line(data = nd2, aes(x = GDD, y = p, color = population), size = 1) +
   labs(y="Cumulative emergence (%)", x = "Growing degree days") +
   coord_trans(x= "log") +
 #  geom_point(alpha = 0.1) +
-  geom_jitter(data = full_dt1, 
-              aes(x = GDD, y = emergence, color = population),
-              alpha = 0.1) +
   facet_grid(crop ~ .) +
   scale_x_continuous(limits = c(1, 5000), breaks = c(1, 10, 100, 1000)) + 
   scale_color_colorblind(name = NULL, 
@@ -513,7 +513,7 @@ d <- tibble(x = c(1.95, 1.95), y = c(1.95, 1.95),
 ```
 
 ```{r}
-scales::show_col(calc_pal()(4))
+scales::show_col(calc_pal()(5))
 ```
 
 ```{r}
@@ -575,10 +575,10 @@ ggplot(aes(x = population, y = rate,
   geom_text(data = soy1, mapping = aes(x = 1.8, y = 90), label = "Nested across Timing", 
            hjust = 0, size = 3.5, fontface = "italic", color = "#579d1c",
            inherit.aes = FALSE) +
-  geom_curve(data = soy1, mapping = aes(x = 2.95, y = 100, xend = 2.8, yend = 120),
+  geom_curve(data = soy1, mapping = aes(x = 2.95, y = 120, xend = 2.8, yend = 140),
              arrow = arrow(length = unit(0.07, "inch")), 
              size = 0.4, curvature = 0.3, color = "gray60", inherit.aes = FALSE) +
-  geom_text(data = soy1, mapping = aes(x = 2.8, y = 130), label = "Nested across Population", 
+  geom_text(data = soy1, mapping = aes(x = 2.8, y = 150), label = "Nested across Accession", 
            hjust = 0, size = 3.5, fontface = "italic", color = "gray60",
            inherit.aes = FALSE) +
   coord_flip() +
