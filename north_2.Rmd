@@ -210,8 +210,197 @@ ggsave("figures/fig_7.png", dpi = 300, width = 4, height = 7)
 ```
 
 
+```{r}
+soy <- tibble(crop = 'Wheat stubble')
+soy1 <- tibble(crop = 'Soybean')
+```
+
+```{r}
+ed4 %>%
+  bind_rows(ed6) -> eds 
+
+eds  |>  
+ggplot(aes(x = ed, y = estimate, color = trt, shape = trt)) +
+  geom_point(position = position_dodge2(width = 0.7), size = 2) +
+  geom_linerange(aes(ymin = lower, ymax = upper), size = 1.03,
+                 position = position_dodge2(width = 0.7)) +
+  labs(x = "Cumulative emergence (%)", 
+       y = "Growing Degree Days", shape = NULL) +
+  scale_y_continuous(limits = c(0, 1500), breaks = seq(0, 1500, 500)) +
+  coord_flip() +
+  facet_grid(crop ~ .) +
+  scale_color_colorblind(name = NULL) +
+  scale_shape_manual(values = c(8,9,10)) +
+  geom_text_repel(data = eds, mapping = aes(label = round(estimate,0), 
+                         x = ed, color = trt),
+                    size = 3,
+                    force_pull = 0,
+                    direction = "y",
+                    point.padding = NA,
+                    min.segment.length = 14,
+                    vjust = 0.5,
+                    position = position_dodge2(width = 0.7),
+                    seed = 312) +
+  geom_curve(data = soy, mapping = aes(x = 0.7, y = 94, xend = 0.6, yend = 220),
+             arrow = arrow(length = unit(0.07, "inch")), 
+             size = 0.4, curvature = 0.3, color = "#000000", inherit.aes = FALSE) + 
+  geom_text(data = soy, mapping = aes(x = 0.6, y = 250), label = "Lin", 
+           hjust = 0, size = 3.5, fontface = "bold", inherit.aes = FALSE,
+           color = "#000000") +
+  geom_curve(data = soy, mapping = aes(x = 2.0, y = 211, xend = 2.2, yend = 350),
+             arrow = arrow(length = unit(0.07, "inch")), 
+             size = 0.4, curvature = -0.3, color = "#E69F00", inherit.aes = FALSE) +
+  geom_text(data = soy, mapping = aes(x = 2.2, y = 400), label = "Npl", 
+           hjust = 0, size = 3.5, fontface = "bold", inherit.aes = FALSE,
+           color = "#E69F00") +
+  geom_curve(data = soy, mapping = aes(x = 3.2, y = 548, xend = 3.4, yend = 700),
+             arrow = arrow(length = unit(0.07, "inch")), 
+             size = 0.4, curvature = -0.3, color = "#56B4E9", inherit.aes = FALSE) + 
+  geom_text(data = soy, mapping = aes(x = 3.4, y = 750), label = "Scb", 
+           hjust = 0, size = 3.5, fontface = "bold", color = "#56B4E9", 
+           inherit.aes = FALSE) +
+  geom_text(data = soy1, mapping = aes(x = 0.6, y = 850), label = "North Platte", 
+           hjust = 0, size = 4, fontface = "italic", inherit.aes = FALSE) +
+  theme_bw() +
+  theme(legend.position = "none",
+        strip.text = element_markdown(size = 12, 
+                                      face = "bold"),
+        panel.grid = element_blank(),
+        axis.title = element_markdown(size = 12),
+        axis.text = element_markdown(size = 11)) +
+  guides(color = "none") -> fig1
+
+ggsave("figures/fig_7.png", dpi = 300, width = 4, height = 7)
+```
 
 
+
+
+## Curve Wheat stubble
+
+
+```{r Control prediction, include=FALSE}
+newdata <- expand.grid(GDD=exp(seq(log(0.5), log(1500), length=1500)))
+newdata1 <- data.frame(population = c("Lin"), newdata)
+newdata2 <- data.frame(population = c("Npl"), newdata)
+newdata3 <- data.frame(population = c("Scb"), newdata)
+
+nd <- rbind(newdata1, newdata2, newdata3)
+
+pm <- predict(model3, newdata=nd, interval="confidence")
+
+nd$p <- pm[,1] 
+nd$pmin <- pm[,2] 
+nd$pmax <- pm[,3] 
+
+wheat_m$GDD0 <- wheat_m$GDD
+wheat_m$GDD0[wheat_m$GDD0==0] <- 0.5
+```
+
+
+## Curve Soybean
+
+
+```{r Control prediction, include=FALSE}
+newdata <-  expand.grid(GDD=exp(seq(log(0.5), log(1500), length=1500)))
+newdata4 <- data.frame(population =c("Lin"), newdata)
+newdata5 <- data.frame(population =c("Npl"), newdata)
+newdata6 <- data.frame(population =c("Scb"), newdata)
+
+nd1 <- rbind(newdata4, newdata5, newdata6)
+
+pm1 <- predict(model4, newdata=nd1, interval="confidence")
+
+nd1$p <- pm1[,1] 
+nd1$pmin <- pm1[,2] 
+nd1$pmax <- pm1[,3] 
+
+soy_m$GDD0 <- soy_m$GDD
+soy_m$GDD0[soy_m$GDD0==0] <- 0.5
+```
+
+
+
+```{r message=FALSE, warning=FALSE}
+wheat_m |> 
+  bind_rows(soy_m) |> 
+  mutate(population = fct_recode(population,
+    "<b style='color:#000000;'>Lin</b>" = "Lin",
+    "<b style='color:#E69F00;'>Npl</b>" = "Npl",
+    "<b style='color:#56B4E9;'>Scb</b>" = "Scb"
+  )) -> full_dt1
+
+nd |> 
+  mutate(crop = "Wheat stubble") -> nd
+
+nd1 |> 
+  mutate(crop = "Soybean") -> nd1
+
+nd |> 
+  bind_rows(nd1) |> 
+  mutate(population = fct_recode(population,
+    "<b style='color:#000000;'>Lin</b>" = "Lin",
+    "<b style='color:#E69F00;'>Npl</b>" = "Npl",
+    "<b style='color:#56B4E9;'>Scb</b>" = "Scb"
+  )) -> nd2
+```
+
+
+```{r message=FALSE, warning=FALSE}
+full_dt1 %>% 
+ggplot(aes(x = GDD, y = emergence, color = population)) + 
+  geom_line(data = nd2, aes(x = GDD, y = p, color = population), size = 1) +
+  labs(y="Cumulative emergence (%)", x = "Growing degree days") +
+  coord_trans(x= "log") +
+#  geom_point(alpha = 0.1) +
+  geom_jitter(data = full_dt1, 
+              aes(x = GDD, y = emergence, color = population),
+              alpha = 0.1) +
+  facet_grid(crop ~ .) +
+  scale_x_continuous(limits = c(1, 5000), breaks = c(1, 10, 100, 1000)) + 
+  scale_color_colorblind(name = NULL, 
+                         guide = guide_legend(reverse = TRUE)) +
+  geom_segment(aes(x = 25, y = 10,
+                   xend = 400, yend = 10), 
+               arrow = arrow(length = unit(0.03, "npc")), 
+               size = 0.8,
+               color = 2) +
+  annotate("text", x = 700, y = 10, label = "10%", 
+           fontface = 'italic',
+           size = 3) +
+  geom_segment(aes(x = 70, y = 50, 
+                   xend = 750, yend = 50), 
+               arrow = arrow(length = unit(0.03, "npc")),
+               size = 0.8,
+               color = 2) +
+  annotate("text", x = 1350, y = 50, label = "50%", 
+           fontface = 'italic',
+           size = 3) +
+  geom_segment(aes(x = 200, y = 90, 
+                   xend = 2000, yend = 90), 
+               arrow = arrow(length = unit(0.03, "npc")),
+               size = 0.8,
+               color = 2) +
+  annotate("text", x = 3500, y = 90, label = "90%", 
+           fontface = 'italic', color = "#333333",
+           size = 3) +
+  theme_bw() +
+  theme(axis.title = element_markdown(size = 12),
+        axis.text = element_markdown(size = 11),
+        legend.position = c(0.1, 0.95),
+        legend.background = element_rect(colour = NA, fill = NA),
+        legend.key = element_rect(colour = NA, fill = NA),
+        panel.grid = element_blank(),
+        legend.text = element_markdown(size = 8, face = "bold"),
+        legend.key.size = unit(0.5, "cm"),
+        strip.text = element_markdown(size = 12, face = "bold")) -> fig3
+
+ggsave("figures/fig_22.png", dpi = 300, width = 4, height = 7)
+```
+
+
+
+## Weed density
 
 ```{r}
 library(glmmTMB)
@@ -283,25 +472,69 @@ glmmTMB:::Anova.glmmTMB(mod_4)
 ```
 
 ```{r}
-emmeans(mod_4, ~ population * time, type = "response") -> em_4
+emmeans(mod_4, ~ population, type = "response") -> em_4
 ```
 
 
 ```{r}
 cld(em_4, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE) %>% 
   as_tibble() |> 
-  mutate(crop = "Soybean") -> cld_4
+  mutate(crop = "Soybean") |> 
+  mutate(time = "springfall") -> cld_4
+```
+
+
+```{r}
+emmeans(mod_4, ~ time, type = "response") -> em_4_4
+```
+
+
+```{r}
+cld(em_4_4, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE) %>% 
+  as_tibble() |> 
+  mutate(crop = "Soybean") |> 
+  dplyr::select(1, 2, 5, 6) |> 
+  mutate_if(is.double, ~round(.,2)) |> 
+  mutate(rate = if_else(rate == 94.58, "94.58 a", "2.00 b")) |> 
+  mutate(time = str_to_title(time)) |> 
+  rename(Timing = time,
+         Density = rate,
+         `Lower CI` = lower.CL,
+         `Upper CI` = upper.CL) -> cld_4_4
 ```
 
 ```{r}
-weat <- tibble(crop = 'Soybean')
+weat <- tibble(crop = 'Wheat stubble')
 ```
 
 ```{r}
+d <- tibble(x = c(1.95, 1.95), y = c(1.95, 1.95),
+            name = c("A"), tb = list(cld_4_4), crop = "Soybean")
+```
+
+```{r}
+scales::show_col(calc_pal()(4))
+```
+
+```{r}
+library(ggpmisc)
 cld_3 %>% 
   bind_rows(cld_4) |> 
-  ggplot(aes(x = population, y = rate, 
-             color = population, shape = time)) +
+  mutate(population = fct_recode(population,
+    "<b style='color:#000000;'>Lin</b>" = "Lin",
+    "<b style='color:#E69F00;'>Npl</b>" = "Npl",
+    "<b style='color:#56B4E9;'>Scb</b>" = "Scb"
+  )) -> cld_33
+```
+
+
+
+
+
+```{r}
+cld_33 |> 
+ggplot(aes(x = population, y = rate, 
+             color = time, shape = time)) +
   geom_point(position = position_dodge2(width = 0.4, reverse = TRUE),
              size = 2) +
   geom_linerange(aes(ymin = lower.CL, ymax = upper.CL), size = 1.03,
@@ -311,9 +544,9 @@ cld_3 %>%
        shape = NULL) +
   facet_grid(crop ~ .) +
   scale_y_continuous(limits = c(0, 420), breaks = seq(0, 420, 100)) +
-  scale_shape_manual(values = c(16,15)) +
+  scale_shape_manual(values = c(16,15,14)) +
   geom_text_repel(aes(label = round(rate,0), 
-                         x = population, color = population),
+                         x = population, color = time),
                     size = 3,
                     force_pull = 0,
                     direction = "y",
@@ -321,27 +554,43 @@ cld_3 %>%
                     min.segment.length = 14,
                     vjust = 0.5,
                     position = position_dodge2(width = 0.4, reverse = TRUE),
-                    seed = 455) +
-  scale_color_colorblind(name = NULL) +
-  geom_curve(data = weat, mapping = aes(x = 1.85, y = 3, xend = 1.7, yend = 13),
+                    seed = 275) +
+  scale_color_manual(values = c("#004586", "#ff420e", "#579d1c")) +
+  geom_table_npc(data = d, aes(npcx = x, npcy = y, label = tb)) +
+  geom_curve(data = weat, mapping = aes(x = 1.85, y = 10, xend = 1.7, yend = 15),
              arrow = arrow(length = unit(0.07, "inch")), 
-             size = 0.4, curvature = 0.3, color = 2, inherit.aes = FALSE) + 
-  geom_text(data = weat, mapping = aes(x = 1.7, y = 23), label = "Spring", 
-           hjust = 0, size = 2.5, fontface = "italic", inherit.aes = FALSE) +
-  geom_curve(data = weat, mapping = aes(x = 2.05, y = 174, xend = 1.9, yend = 184),
+             size = 0.4, curvature = 0.3, color = "#ff420e", inherit.aes = FALSE) + 
+  geom_text(data = weat, mapping = aes(x = 1.7, y = 20), label = "Spring", 
+           hjust = 0, size = 3.5, fontface = "italic",
+           color = "#ff420e", inherit.aes = FALSE) +
+  geom_curve(data = weat, mapping = aes(x = 2.05, y = 337, xend = 1.9, yend = 360),
              arrow = arrow(length = unit(0.07, "inch")), 
-             size = 0.4, curvature = 0.3, color = 2, inherit.aes = FALSE) +
-  geom_text(data = weat, mapping = aes(x = 1.9, y = 194), label = "Fall", 
-           hjust = 0, size = 2.5, fontface = "italic", inherit.aes = FALSE) +
+             size = 0.4, curvature = 0.3, color = "#004586", inherit.aes = FALSE) +
+  geom_text(data = weat, mapping = aes(x = 1.9, y = 370), label = "Fall", 
+           hjust = 0, size = 3.5, fontface = "italic", color = "#004586",
+           inherit.aes = FALSE) +
+  geom_curve(data = soy1, mapping = aes(x = 1.95, y = 21, xend = 1.8, yend = 80),
+             arrow = arrow(length = unit(0.07, "inch")), 
+             size = 0.4, curvature = 0.3, color = "#579d1c", inherit.aes = FALSE) +
+  geom_text(data = soy1, mapping = aes(x = 1.8, y = 90), label = "Nested across Timing", 
+           hjust = 0, size = 3.5, fontface = "italic", color = "#579d1c",
+           inherit.aes = FALSE) +
+  geom_curve(data = soy1, mapping = aes(x = 2.95, y = 100, xend = 2.8, yend = 120),
+             arrow = arrow(length = unit(0.07, "inch")), 
+             size = 0.4, curvature = 0.3, color = "gray60", inherit.aes = FALSE) +
+  geom_text(data = soy1, mapping = aes(x = 2.8, y = 130), label = "Nested across Population", 
+           hjust = 0, size = 3.5, fontface = "italic", color = "gray60",
+           inherit.aes = FALSE) +
   coord_flip() +
   geom_text(aes(x = population, y = upper.CL + 25, label = .group),
            position = position_dodge2(width = 0.4, reverse = TRUE)) +
   theme_bw() +
   theme(legend.position = "none",
-         strip.text = element_markdown(size = 11, 
+        strip.text = element_markdown(size = 12, 
                                       face = "bold"),
-        axis.title = element_markdown(size = 11),
-        axis.text = element_markdown(size = 10))  -> fig8
+        axis.title = element_markdown(size = 12),
+        panel.grid = element_blank(),
+        axis.text.y = element_markdown(size = 11))  -> fig2
 
 
 ggsave("figures/fig_11.png", dpi = 300, width = 4, height = 7)
@@ -349,13 +598,18 @@ ggsave("figures/fig_11.png", dpi = 300, width = 4, height = 7)
 
 
 
-```{r warning = FALSE}
-fig7 + fig8 +
-  plot_annotation(tag_levels = 'A') & 
-  theme(plot.tag = element_text(size = 15, hjust = 0, vjust = 0))
 
-ggsave("figures/north_platte.png", width = 9, height = 7)
+```{r warning = FALSE}
+fig3 + fig1 + fig2 +
+  plot_annotation(tag_levels = 'A') & 
+  theme(plot.tag = element_text(size = 15, hjust = 0, vjust = 0),
+        panel.background = element_rect(fill = "#F5F5F5"),
+        plot.background = element_rect(fill = "#F5F5F5"))
+
+ggsave("figures/north_platte.png", width = 13, height = 7)
 ```
+
+
 
 
 

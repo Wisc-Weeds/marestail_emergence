@@ -358,13 +358,13 @@ nd |>
 ```{r message=FALSE, warning=FALSE}
 full_dt %>% 
 ggplot(aes(x = GDD, y = emergence, color = population)) + 
+  geom_jitter(data = full_dt, 
+              aes(x = GDD, y = emergence, color = population),
+              alpha = 0.1) +
   geom_line(data = nd2, aes(x = GDD, y = p, color = population), size = 1) +
   labs(y="Cumulative emergence (%)", x = "Growing degree days") +
   coord_trans(x= "log") +
 #  geom_point(alpha = 0.1) +
-  geom_jitter(data = full_dt, 
-              aes(x = GDD, y = emergence, color = population),
-              alpha = 0.1) +
   facet_grid(crop ~ .) +
   scale_x_continuous(limits = c(1, 1000), breaks = c(1, 10, 100, 1000)) + 
   scale_color_colorblind(name = NULL, 
@@ -407,6 +407,8 @@ ggplot(aes(x = GDD, y = emergence, color = population)) +
 ggsave("figures/fig_2.png", dpi = 300, width = 4, height = 7)
 ```
 
+
+## Weed density
 
 ```{r}
 library(glmmTMB)
@@ -458,6 +460,11 @@ cld(em_2, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE) %>%
 ```{r}
 cld_1 %>%
   bind_rows(cld_2) |> 
+  mutate(population = fct_recode(population,
+    "<b style='color:#000000;'>Lin</b>" = "Lin",
+    "<b style='color:#E69F00;'>Npl</b>" = "Npl",
+    "<b style='color:#56B4E9;'>Scb</b>" = "Scb"
+  )) |> 
   ggplot(aes(x = fct_reorder(population, rate), y = rate, color = population)) +
   geom_linerange(aes(ymin = lower.CL, ymax = upper.CL), size = 1.03) +
   geom_point(size = 2) +
@@ -477,7 +484,7 @@ cld_1 %>%
                     vjust = 0.5,
                     position = position_dodge2(width = 0.4),
                     seed = 455) +
-  geom_text(aes(x = population, y = upper.CL + 35, label = .group),
+  geom_text(aes(x = population, y = upper.CL + 35, label = .group, color = population),
             inherit.aes = FALSE) +
   scale_color_colorblind(name = NULL) +
 #  facet_grid(~ ed, switch = "y") +
@@ -488,7 +495,7 @@ cld_1 %>%
                                       face = "bold"),
         axis.title = element_markdown(size = 12),
         panel.grid = element_blank(),
-        axis.text = element_markdown(size = 11)) -> fig2
+        axis.text.y = element_markdown(size = 11)) -> fig2
 
 #ggsave("figures/fig_2.png", dpi = 300, width = 4, height = 7)
 ```
