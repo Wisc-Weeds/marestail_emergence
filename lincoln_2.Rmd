@@ -117,9 +117,9 @@ readxl::read_excel("data/dates.xlsx", sheet = "Lincoln") %>%
 ```{r}
 ed2 %>% 
   mutate(ed = case_when(
-  ed == "10" ~ "10% emergence",
-  ed == "50" ~ "50% emergence",
-  ed == "90" ~ "90% emergence",
+  ed == "10" ~ "10%",
+  ed == "50" ~ "50%",
+  ed == "90" ~ "90%",
   TRUE ~ "ed")) |> 
   mutate(crop = "Corn") -> ed3
 ```
@@ -168,9 +168,9 @@ EDcomp(model2, c(90,90), type = "absolute",
 ```{r}
 ed5 %>% 
   mutate(ed = case_when(
-  ed == "10" ~ "10% emergence",
-  ed == "50" ~ "50% emergence",
-  ed == "90" ~ "90% emergence",
+  ed == "10" ~ "10%",
+  ed == "50" ~ "50%",
+  ed == "90" ~ "90%",
   TRUE ~ "ed")) |> 
   mutate(crop = "Soybean") -> ed6
 ```
@@ -211,22 +211,22 @@ ggplot(aes(x = ed, y = estimate, color = trt, shape = trt)) +
                     hjust = 0.5,
                     position = position_dodge2(width = 0.8),
                     seed = 97) +
-  geom_curve(data = crn, mapping = aes(x = 0.7, y = 50, xend = 0.6, yend = 220),
+  geom_curve(data = crn, mapping = aes(x = 0.7, y = 50, xend = 0.6, yend = 140),
              arrow = arrow(length = unit(0.07, "inch")), 
              size = 0.4, curvature = 0.3, color = "#000000", inherit.aes = FALSE) + 
-  geom_text(data = crn, mapping = aes(x = 0.6, y = 250), label = "Lin", 
+  geom_text(data = crn, mapping = aes(x = 0.6, y = 170), label = "Lin", 
            hjust = 0, size = 3.5, fontface = "bold", inherit.aes = FALSE,
            color = "#000000") +
-  geom_curve(data = crn, mapping = aes(x = 2.1, y = 108, xend = 2.3, yend = 350),
+  geom_curve(data = crn, mapping = aes(x = 2.1, y = 108, xend = 2.3, yend = 240),
              arrow = arrow(length = unit(0.07, "inch")), 
              size = 0.4, curvature = -0.3, color = "#E69F00", inherit.aes = FALSE) +
-  geom_text(data = crn, mapping = aes(x = 2.3, y = 400), label = "Npl", 
+  geom_text(data = crn, mapping = aes(x = 2.3, y = 270), label = "Npl", 
            hjust = 0, size = 3.5, fontface = "bold", inherit.aes = FALSE,
            color = "#E69F00") +
-  geom_curve(data = crn, mapping = aes(x = 0.9, y = 190, xend = 1.3, yend = 350),
+  geom_curve(data = crn, mapping = aes(x = 0.9, y = 150, xend = 1.1, yend = 250),
              arrow = arrow(length = unit(0.07, "inch")), 
              size = 0.4, curvature = 0.3, color = "#009E73", inherit.aes = FALSE) +
-  geom_text(data = crn, mapping = aes(x = 1.4, y = 300), label = "Natural", 
+  geom_text(data = crn, mapping = aes(x = 1.2, y = 220), label = "Natural", 
            hjust = 0, size = 3.5, fontface = "bold", inherit.aes = FALSE,
            color = "#009E73") +
   geom_curve(data = crn, mapping = aes(x = 3.3, y = 399, xend = 3.4, yend = 530),
@@ -245,6 +245,8 @@ ggplot(aes(x = ed, y = estimate, color = trt, shape = trt)) +
         axis.title = element_markdown(size = 12),
         axis.text = element_markdown(size = 11)) +
   guides(color = "none") -> fig1
+
+
 
 ggsave("figures/fig_4.png", dpi = 300, width = 4, height = 7)
 ```

@@ -98,16 +98,10 @@ EDcomp(model3, c(90,90), type = "absolute",
 ```{r warning = FALSE}
 ed3 %>% 
   mutate(ed = case_when(
-  ed == "10" ~ "10% emergence",
-  ed == "50" ~ "50% emergence",
-  ed == "90" ~ "90% emergence",
-  TRUE ~ "ed")) %>% 
-  mutate(trt = fct_relevel(trt, levels = c("Lin in wheat stubble",
-                                           "Lin in soybean",
-                                           "Scb in soybean",
-                                           "Npl in soybean",
-                                           "Scb in wheat stubble",
-                                           "Npl in wheat stubble"))) -> ed4
+  ed == "10" ~ "10%",
+  ed == "50" ~ "50%",
+  ed == "90" ~ "90%",
+  TRUE ~ "ed")) -> ed4
 ```
 
 

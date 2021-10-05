@@ -99,9 +99,9 @@ EDcomp(model3, c(10,10, 50, 50, 90,90), type = "absolute",
 ```{r warning = FALSE}
 ed3 %>% 
   mutate(ed = case_when(
-  ed == "10" ~ "10% emergence",
-  ed == "50" ~ "50% emergence",
-  ed == "90" ~ "90% emergence",
+  ed == "10" ~ "10%",
+  ed == "50" ~ "50%",
+  ed == "90" ~ "90%",
   TRUE ~ "ed")) |> 
   mutate(crop = "Wheat stubble") -> ed4
 ```
@@ -144,9 +144,9 @@ EDcomp(model4, c(10,10, 50,50, 90,90), type = "absolute",
 ```{r warning = FALSE}
 ed5 %>% 
   mutate(ed = case_when(
-  ed == "10" ~ "10% emergence",
-  ed == "50" ~ "50% emergence",
-  ed == "90" ~ "90% emergence",
+  ed == "10" ~ "10%",
+  ed == "50" ~ "50%",
+  ed == "90" ~ "90%",
   TRUE ~ "ed")) |> 
   mutate(crop = "Soybean") -> ed6
 ```
