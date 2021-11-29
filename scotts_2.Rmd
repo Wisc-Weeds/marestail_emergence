@@ -170,7 +170,11 @@ cld(em_1, alpha=0.05, Letters=letters,
     adjust="none", reversed = TRUE) %>% 
   as_tibble() |> 
   mutate(crop = "Corn") |> 
-  mutate_if(is.double, ~ round(., 2)) -> cld_1
+  mutate_if(is.double, ~ round(., 2)) |> 
+  mutate(.group = case_when(
+    timing == "spring" ~ NA_character_,
+    TRUE ~ .group
+  )) -> cld_1
 ```
 
 ## Fallow
@@ -460,11 +464,16 @@ options(scipen = 99)
 cld(em_2, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE) %>% 
   as_tibble() |> 
   mutate(crop = "Fallow") |> 
-  mutate_if(is.double, ~ round(., 2)) -> cld_2
+  mutate_if(is.double, ~ round(., 2)) |> 
+  mutate(.group = case_when(
+    timing == "spring" ~ NA_character_,
+    TRUE ~ "a"
+  )) -> cld_2
 ```
 
 ```{r}
 crn <- tibble(crop = 'Corn')
+flw <- tibble(crop = 'Fallow')
 ```
 
 ```{r}
@@ -509,6 +518,12 @@ cld_1 %>%
              size = 0.4, curvature = -0.3, color = "#ff420e", inherit.aes = FALSE) +
   geom_text(data = crn, mapping = aes(x = 2.2, y = 220), label = "Spring", 
            hjust = 0, size = 3.5, fontface = "italic", color = "#ff420e",
+           inherit.aes = FALSE) +
+  geom_curve(data = crn, mapping = aes(x = 2.0, y = 700, xend = 1.8, yend = 800),
+             arrow = arrow(length = unit(0.07, "inch")), 
+             size = 0.4, curvature = 0.3, color = "#004586", inherit.aes = FALSE) +
+  geom_text(data = crn, mapping = aes(x = 1.8, y = 820), label = "Fall", 
+           hjust = 0, size = 3.5, fontface = "italic", color = "#004586",
            inherit.aes = FALSE) +
   coord_flip() +
   theme_bw() +
