@@ -11,6 +11,7 @@ library(glmmTMB)
 library(emmeans)
 library(multcomp)
 ```
+
 # Scottsbluff
 
 ```{r}
@@ -28,7 +29,8 @@ readxl::read_excel("anova.xlsx", sheet = "SB") %>%
     pop == "SB" & treat == "ir" ~ "Scb1 in irrigated",
     TRUE ~ NA_character_
   )) %>% 
-  mutate(rep = as_factor(rep)) -> sb_data
+  mutate(rep = as_factor(rep)) |> 
+  mutate(timing = "fall") -> sb_data
 ```
 
 
@@ -96,7 +98,8 @@ readxl::read_excel("anova.xlsx", sheet = "NP") %>%
     pop == "SB" & treat == "ir" ~ "Scb1 in irrigated",
     TRUE ~ NA_character_
   )) %>% 
-  mutate(rep = as_factor(rep)) -> np_data
+  mutate(rep = as_factor(rep)) |> 
+  rename(timing = S) -> np_data
 ```
 
 

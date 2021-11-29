@@ -131,7 +131,7 @@ library(multcomp)
 ```
 
 ```{r}
-readxl::read_excel("anova.xlsx", sheet = "SB") %>% 
+readxl::read_excel("data/anova_2.xlsx", sheet = "SB") %>% 
   mutate_if(is_character, as_factor) %>% 
   rename(rep = R,
          pop = P,
@@ -153,7 +153,7 @@ readxl::read_excel("anova.xlsx", sheet = "SB") %>%
 crn_sct_a <- sb_data |> 
   filter(crop == "corn")
 
-mod_1 = glmmTMB(dansity ~ population + (1|rep),
+mod_1 = glmmTMB(dansity ~ population * timing + (1|rep),
                 family = poisson(), data = crn_sct_a)
 ```
 
@@ -162,13 +162,15 @@ glmmTMB:::Anova.glmmTMB(mod_1)
 ```
 
 ```{r}
-emmeans(mod_1, ~ population, type = "response") -> em_1
+emmeans(mod_1, ~ population * timing, type = "response") -> em_1
 ```
 
 ```{r}
-cld(em_1, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE) %>% 
+cld(em_1, alpha=0.05, Letters=letters, 
+    adjust="none", reversed = TRUE) %>% 
   as_tibble() |> 
-  mutate(crop = "Corn") -> cld_1
+  mutate(crop = "Corn") |> 
+  mutate_if(is.double, ~ round(., 2)) -> cld_1
 ```
 
 ## Fallow
@@ -418,7 +420,7 @@ library(multcomp)
 ```
 
 ```{r}
-readxl::read_excel("anova.xlsx", sheet = "SB") %>% 
+readxl::read_excel("data/anova_2.xlsx", sheet = "SB") %>% 
   mutate_if(is_character, as_factor) %>% 
   rename(rep = R,
          pop = P,
@@ -440,7 +442,7 @@ readxl::read_excel("anova.xlsx", sheet = "SB") %>%
 crn_sct_f <- sb_data |> 
   filter(crop == "fallow")
 
-mod_2 = glmmTMB(dansity ~ population + (1|rep),
+mod_2 = glmmTMB(dansity ~ population * timing + (1|rep),
                 family = poisson(), data = crn_sct_f)
 ```
 
@@ -449,13 +451,16 @@ glmmTMB:::Anova.glmmTMB(mod_2)
 ```
 
 ```{r}
-emmeans(mod_2, ~ population, type = "response") -> em_2
+emmeans(mod_2, ~ population | timing, type = "response") -> em_2
 ```
 
+
 ```{r}
+options(scipen = 99)
 cld(em_2, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE) %>% 
   as_tibble() |> 
-  mutate(crop = "Fallow") -> cld_2
+  mutate(crop = "Fallow") |> 
+  mutate_if(is.double, ~ round(., 2)) -> cld_2
 ```
 
 ```{r}
@@ -465,38 +470,45 @@ crn <- tibble(crop = 'Corn')
 ```{r}
 cld_1 %>%
   bind_rows(cld_2) |> 
+  mutate(upper.CL = case_when(
+    upper.CL == Inf ~ 0,
+    TRUE ~ upper.CL)) |> 
   mutate(population = fct_recode(population,
     "<b style='color:#000000;'>Lin</b>" = "Lin",
     "<b style='color:#E69F00;'>Npl</b>" = "Npl",
     "<b style='color:#56B4E9;'>Scb</b>" = "Scb"
   )) |> 
-  mutate(time = "Fall") |> 
-  ggplot(aes(x = fct_reorder(population, rate), y = rate, color = time)) +
-  geom_linerange(aes(ymin = lower.CL, ymax = upper.CL), size = 1.03) +
-  geom_point(size = 2) +
+  mutate(timing = if_else(timing == "fall", "Fall", "Spring")) |> 
+  ggplot(aes(x = fct_reorder(population, rate), 
+             y = rate, color = timing)) +
+  geom_point(position = position_dodge2(width = 0.4, reverse = TRUE),
+             size = 2) +
+  geom_linerange(aes(ymin = lower.CL, ymax = upper.CL), size = 1.03,
+                 position = position_dodge2(width = 0.4, reverse = TRUE)) +
   labs(x = NULL, 
        y = expression(paste("Horseweed density (plants experimental unit"^"-1",")"))) +
   scale_y_continuous(limits = c(0, 1150), 
                      breaks = seq(0, 1150, 200)) +
   facet_grid(crop ~ .) +
   geom_text_repel(aes(label = round(rate,0), 
-                         x = population),
+                         x = population, color = timing),
                     size = 3,
                     force_pull = 0,
                     direction = "y",
                     point.padding = NA,
                     min.segment.length = 14,
                     vjust = 0.5,
-                    position = position_dodge2(width = 0.4),
-                    seed = 455) +
-  geom_text(aes(x = population, y = upper.CL + 35, label = .group, color = time),
-            inherit.aes = FALSE) +
-  scale_color_manual(values = "#004586") +
+                    position = position_dodge2(width = 0.4, reverse = TRUE),
+                    seed = 275) +
+  geom_text(aes(x = population, y = upper.CL + 55, label = .group, color = timing),
+            inherit.aes = FALSE,
+            position = position_dodge2(width = 0.4, reverse = TRUE)) +
+  scale_color_manual(values = c("#004586", "#ff420e", "#579d1c")) +
   geom_curve(data = crn, mapping = aes(x = 2.05, y = 48, xend = 2.2, yend = 200),
              arrow = arrow(length = unit(0.07, "inch")), 
-             size = 0.4, curvature = -0.3, color = "#004586", inherit.aes = FALSE) +
-  geom_text(data = crn, mapping = aes(x = 2.2, y = 220), label = "Fall", 
-           hjust = 0, size = 3.5, fontface = "italic", color = "#004586",
+             size = 0.4, curvature = -0.3, color = "#ff420e", inherit.aes = FALSE) +
+  geom_text(data = crn, mapping = aes(x = 2.2, y = 220), label = "Spring", 
+           hjust = 0, size = 3.5, fontface = "italic", color = "#ff420e",
            inherit.aes = FALSE) +
   coord_flip() +
   theme_bw() +
