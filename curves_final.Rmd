@@ -844,7 +844,7 @@ fig3 + fig4 + fig5 +
         panel.background = element_rect(fill = "#F5F5F5"),
         plot.background = element_rect(fill = "#F5F5F5"))
 
-ggsave("figures/Final.png", width = 13, height = 7)
+ggsave("figures/Final.png", width = 13, height = 7) 
 ```
 
 
