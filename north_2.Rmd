@@ -472,9 +472,13 @@ glmmTMB:::Anova.glmmTMB(mod_4)
 ```
 
 ```{r}
-emmeans(mod_4, ~ population, type = "response") -> em_4
+emmeans(mod_4, ~ population * time, type = "response") -> em_4
 ```
 
+```{r}
+cld(em_4, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE) %>% 
+  as_tibble() -> cld_4
+```
 
 ```{r}
 cld(em_4, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE) %>% 

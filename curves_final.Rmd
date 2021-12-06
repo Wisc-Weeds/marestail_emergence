@@ -1,0 +1,88 @@
+---
+title: "curves"
+author: "Maxwel Coura Oliveira"
+date: "12/6/2021"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(drc)
+library(reactable)
+library(ggthemes)
+library(ggtext)
+library(patchwork)
+library(ggrepel)
+```
+
+# Lincoln
+
+
+```{r}
+readxl::read_excel("data/Emergence.xlsx", sheet = "Lincoln") %>% 
+  janitor::row_to_names(row_number = 1) %>% 
+  dplyr::select(1:9) %>% 
+  pivot_longer(cols = 2:9, names_to = "type", values_to = "emergence") %>% 
+  mutate(date = "Sep 2016 - Apr 2017") %>% 
+  mutate_at(c("GDD", "emergence"),  as.double) %>% 
+  mutate_at(c("GDD", "emergence"), ~ round(., 2)) %>% 
+  separate("type", c("population", "type"), sep = "-") %>% 
+  mutate_at(c("population", "type"), str_squish) %>% 
+  mutate(population = fct_recode(population,
+                                 "Lin" = "Lincoln",
+                                 "Npl" = "North Platte",
+                                 "Scb" = "Scottsbluff")) %>% 
+  mutate(location = "Lincoln") %>% 
+  filter(!is.na(GDD)) -> lcn1
+```
+
+
+```{r}
+readxl::read_excel("data/Emergence.xlsx", sheet = "Lincoln") %>% 
+  janitor::row_to_names(row_number = 1) %>% 
+  dplyr::select(13:21) %>% 
+  pivot_longer(cols = 2:9, names_to = "type", values_to = "emergence") %>% 
+  mutate(date = "Sep 2017-Jun 2018") %>% 
+  mutate_at(c("GDD", "emergence"),  as.double) %>% 
+  mutate_at(c("GDD", "emergence"), ~ round(., 2)) %>% 
+  separate("type", c("population", "type"), sep = "-") %>% 
+  mutate_at(c("population", "type"), str_squish) %>% 
+  mutate(population = fct_recode(population,
+                                 "Lin" = "Lincoln",
+                                 "Npl" = "North Platte",
+                                 "Scb" = "Scottsbluff")) %>% 
+  mutate(location = "Lincoln") %>% 
+  filter(!is.na(GDD)) -> lcn2
+```
+
+```{r}
+lcn1 %>% 
+  bind_rows(lcn2) %>% 
+  mutate(type = str_to_lower(type)) %>% 
+  unite("trt", c("population", "type"), sep = " in ", remove = FALSE) %>% 
+  drop_na() -> lincoln
+```
+
+## Corn 
+
+```{r message = FALSE, warning = FALSE}
+lincoln |> 
+  filter(type == "corn") -> crn_l
+
+model1 <- drm(emergence ~ GDD, population, 
+              fct = W1.3(fixed = c(NA, 100, NA), 
+                         names = c("slope", "upper", "ed50")),
+              data = crn_l)
+```
+
+```{r}
+plot(model1, col = c(4,2,3,5))
+```
+
+```{r}
+broom::tidy(model1) %>% 
+  mutate_if(is.double, ~ round(., 2)) %>% 
+  reactable()
+```
+
+
