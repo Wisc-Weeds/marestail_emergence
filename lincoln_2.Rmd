@@ -448,10 +448,10 @@ cld(em_2, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE) %>%
 
 ```{r}
 lc_data |> 
-  filter(crop == "soybean" & time == "fall") -> ssb1
+  filter(crop == "soybean") -> ssb1
 
 
-mod_3 = glmmTMB(density ~ population + (1|rep),
+mod_3 = glmmTMB(density ~ population * time + (1|rep),
                 family = poisson(), data = ssb1)
 ```
 
@@ -460,7 +460,7 @@ glmmTMB:::Anova.glmmTMB(mod_3)
 ```
 
 ```{r}
-emmeans(mod_3, ~ population, type = "response") -> em_3_3
+emmeans(mod_3, ~ population * time, type = "response") -> em_3_3
 ```
 
 
@@ -472,7 +472,8 @@ cld(em_3_3, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE) %>%
     TRUE ~ upper.CL
   )) |> 
   mutate(time = "Fall",
-         crop = "Soybean") -> cld_3_3
+         crop = "Soybean") |> 
+  mutate_if(is.double, ~ round(., 2)) -> cld_3_3
 ```
 
 
