@@ -793,7 +793,7 @@ ggplot(aes(x = GDD, y = emergence, color = population)) +
   coord_trans(x= "log") +
 #  geom_point(alpha = 0.1) +
   facet_grid(crop ~ location) +
-  scale_x_continuous(limits = c(1, 1000), breaks = c(1, 10, 100, 1000)) + 
+  scale_x_continuous(limits = c(1, 5000), breaks = c(1, 10, 100, 1000)) + 
   scale_color_colorblind(name = NULL, 
                          guide = guide_legend(reverse = TRUE)) +
   geom_segment(aes(x = 30, y = 10,
