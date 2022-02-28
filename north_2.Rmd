@@ -385,6 +385,7 @@ ggplot(aes(x = GDD, y = emergence, color = population)) +
            fontface = 'italic', color = "#333333",
            size = 3) +
   theme_bw() +
+#  geom_vline(xintercept = 1027) +
   theme(axis.title = element_markdown(size = 12),
         axis.text = element_markdown(size = 11),
         legend.position = c(0.1, 0.95),
