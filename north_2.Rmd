@@ -14,7 +14,7 @@ library(ggtext)
 library(patchwork)
 library(ggrepel)
 ```
-
+n
 ```{r}
 readxl::read_excel("data/Emergence.xlsx", sheet = "North Platte") %>% 
   janitor::row_to_names(row_number = 1) %>% 
