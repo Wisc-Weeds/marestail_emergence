@@ -75,6 +75,8 @@ model1 <- drm(emergence ~ GDD, population,
               data = crn_l)
 ```
 
+
+
 ```{r}
 plot(model1, col = c(4,2,3,5))
 ```
