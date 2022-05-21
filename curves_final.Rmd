@@ -75,7 +75,11 @@ model1 <- drm(emergence ~ GDD, population,
               data = crn_l)
 ```
 
-
+```{r}
+mse <- mean(residuals(model1)^2/df.residual(model1))
+rmse <- sqrt(mse)
+rmse
+```
 
 ```{r}
 plot(model1, col = c(4,2,3,5))
@@ -127,6 +131,12 @@ model2 <- drm(emergence ~ GDD, population,
               fct = W1.3(fixed = c(NA, 100, NA), 
                          names = c("slope", "upper", "ed50")),
               data = soy_l)
+```
+
+```{r}
+mse <- mean(residuals(model2)^2/df.residual(model1))
+rmse <- sqrt(mse)
+rmse
 ```
 
 ```{r}
@@ -190,6 +200,8 @@ nd$pmax <- pm[,3]
 crn_l$GDD0 <- crn_l$GDD
 crn_l$GDD0[crn_l$GDD0==0] <- 0.5
 ```
+
+
 
 
 ## Curve Soybean
@@ -363,6 +375,12 @@ model3 <- drm(emergence ~ GDD, population,
 ```
 
 ```{r}
+mse <- mean(residuals(model3)^2/df.residual(model3))
+rmse <- sqrt(mse)
+rmse
+```
+
+```{r}
 broom::tidy(model3) %>% 
   mutate_if(is.double, ~ round(., 2)) %>% 
   reactable()
@@ -411,6 +429,12 @@ model4 <- drm(emergence ~ GDD, population,
               fct = W1.3(fixed = c(NA, 100, NA), 
                          names = c("slope", "upper", "ed50")),
               data = soy_m)
+```
+
+```{r}
+mse <- mean(residuals(model4)^2/df.residual(model4))
+rmse <- sqrt(mse)
+rmse
 ```
 
 ```{r}
@@ -629,10 +653,16 @@ sctbf1 %>%
 crn_scott <- scottsbluff |> 
   filter(type == "corn")
 
-model1 <- drm(emergence ~ GDD, population, 
+model5 <- drm(emergence ~ GDD, population, 
               fct = W1.3(fixed = c(NA, 100, NA), 
                          names = c("slope", "upper", "ed50")),
               data = crn_scott)
+```
+
+```{r}
+mse <- mean(residuals(model5)^2/df.residual(model5))
+rmse <- sqrt(mse)
+rmse
 ```
 
 ```{r}
@@ -689,11 +719,18 @@ ed1 %>%
 fallow_scott <- scottsbluff |> 
   filter(type == "fallow")
 
-model2 <- drm(emergence ~ GDD, population, 
+model6 <- drm(emergence ~ GDD, population, 
               fct = W1.3(fixed = c(NA, 100, NA), 
                          names = c("slope", "upper", "ed50")),
               data = fallow_scott)
 ```
+
+```{r}
+mse <- mean(residuals(model6)^2/df.residual(model6))
+rmse <- sqrt(mse)
+rmse
+```
+
 
 ```{r}
 plot(model2)
